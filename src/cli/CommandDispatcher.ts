@@ -77,6 +77,32 @@ export class CommandDispatcher {
 			return this.session.runScale(id, factor);
 		}
 
+		if (command === "group") {
+			const newGroupId = tokens[1];
+			const memberIds = tokens.slice(2);
+			if (!newGroupId || memberIds.length === 0) {
+				return INVALID_ARGUMENTS;
+			}
+			return this.session.runGroup(newGroupId, memberIds);
+		}
+
+		if (command === "ungroup") {
+			const groupId = tokens[1];
+			if (!groupId) {
+				return INVALID_ARGUMENTS;
+			}
+			return this.session.runUngroup(groupId);
+		}
+
+		if (command === "addto") {
+			const containerId = tokens[1];
+			const shapeId = tokens[2];
+			if (!containerId || !shapeId) {
+				return INVALID_ARGUMENTS;
+			}
+			return this.session.runAddTo(containerId, shapeId);
+		}
+
 		return `error: unknown command: ${command}`;
 	}
 }

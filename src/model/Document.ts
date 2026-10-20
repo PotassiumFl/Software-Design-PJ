@@ -79,6 +79,62 @@ export class Document {
 		container.addChild(shape);
 	}
 
+	insertRootShapeAt(index: number, shape: Shape): void {
+		this.registerShape(shape);
+		this.rootShapes.splice(index, 0, shape);
+	}
+
+	getRootIndex(shape: Shape): number {
+		return this.rootShapes.indexOf(shape);
+	}
+
+	isDescendantOf(ancestorId: string, descendantId: string): boolean {
+		const ancestor = this.shapesById.get(ancestorId);
+		if (!(ancestor instanceof GroupShape)) {
+			return false;
+		}
+		return this.containsShapeId(ancestor, descendantId);
+	}
+
+	reparentExistingShapeToContainer(
+		containerId: string,
+		shape: Shape,
+	): void {
+		const container = this.shapesById.get(containerId);
+		if (!container) {
+			throw new Error(`no such container: ${containerId}`);
+		}
+		if (!(container instanceof GroupShape)) {
+			throw new Error(`not a container: ${containerId}`);
+		}
+		this.detachShape(shape);
+		container.addChild(shape);
+	}
+
+	ungroupContainer(groupId: string): number {
+		const group = this.shapesById.get(groupId);
+		if (!group) {
+			throw new Error(`no such shape: ${groupId}`);
+		}
+		if (!(group instanceof GroupShape)) {
+			throw new Error(`not a container: ${groupId}`);
+		}
+
+		const parent = this.findParentContainer(group);
+		if (parent === null) {
+			throw new Error(`cannot ungroup top-level container: ${groupId}`);
+		}
+
+		const index = parent.getChildren().indexOf(group);
+		const children = [...group.getChildren()];
+		parent.removeChild(group);
+		for (let i = 0; i < children.length; i++) {
+			parent.insertChildAt(index + i, children[i]!);
+		}
+		this.shapesById.delete(group.id);
+		return children.length;
+	}
+
 	private registerShape(shape: Shape): void {
 		if (this.shapesById.has(shape.id)) {
 			throw new Error(`id already exists: ${shape.id}`);
@@ -112,6 +168,18 @@ export class Document {
 			}
 		}
 
+		return false;
+	}
+
+	private containsShapeId(group: GroupShape, shapeId: string): boolean {
+		for (const child of group.getChildren()) {
+			if (child.id === shapeId) {
+				return true;
+			}
+			if (child instanceof GroupShape && this.containsShapeId(child, shapeId)) {
+				return true;
+			}
+		}
 		return false;
 	}
 

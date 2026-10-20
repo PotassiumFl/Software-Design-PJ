@@ -1,7 +1,10 @@
 import { CommandHistory } from "./CommandHistory.js";
 import { CreateShapeCommand } from "../command/CreateShapeCommand.js";
 import { InitDocumentCommand } from "../command/InitDocumentCommand.js";
+import { AddToCommand } from "../command/AddToCommand.js";
 import { DeleteShapeCommand } from "../command/DeleteShapeCommand.js";
+import { GroupCommand } from "../command/GroupCommand.js";
+import { UngroupCommand } from "../command/UngroupCommand.js";
 import { MoveShapeCommand } from "../command/MoveShapeCommand.js";
 import { ScaleShapeCommand } from "../command/ScaleShapeCommand.js";
 import { SetAttributeCommand } from "../command/SetAttributeCommand.js";
@@ -82,6 +85,33 @@ export class EditorSession {
 		}
 		return this.commandHistory.execute(
 			new ScaleShapeCommand(this.documentStore, shapeId, factor),
+		);
+	}
+
+	runGroup(newGroupId: string, memberIds: string[]): string {
+		if (!this.hasDocument) {
+			return this.noDocumentMessage();
+		}
+		return this.commandHistory.execute(
+			new GroupCommand(this.documentStore, newGroupId, ...memberIds),
+		);
+	}
+
+	runUngroup(groupId: string): string {
+		if (!this.hasDocument) {
+			return this.noDocumentMessage();
+		}
+		return this.commandHistory.execute(
+			new UngroupCommand(this.documentStore, groupId),
+		);
+	}
+
+	runAddTo(containerId: string, shapeId: string): string {
+		if (!this.hasDocument) {
+			return this.noDocumentMessage();
+		}
+		return this.commandHistory.execute(
+			new AddToCommand(this.documentStore, containerId, shapeId),
 		);
 	}
 
