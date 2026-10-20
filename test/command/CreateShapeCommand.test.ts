@@ -79,3 +79,67 @@ describe("CreateShapeCommand", () => {
 		assert.equal(second.execute(), "error: id already exists: r1");
 	});
 });
+
+describe("CreateShapeCommand builtin leaf shapes", () => {
+	it("creates circle and returns summary", () => {
+		const store = storeWithDocument();
+		const command = new CreateShapeCommand(store, new ShapeRegistry(), [
+			"circle",
+			"c1",
+			"100",
+			"100",
+			"20",
+			"red",
+		]);
+
+		assert.equal(command.execute(), "circle#c1 created");
+		assert.equal(store.getDocument().findById("c1")?.id, "c1");
+	});
+
+	it("creates ellipse and returns summary", () => {
+		const store = storeWithDocument();
+		const command = new CreateShapeCommand(store, new ShapeRegistry(), [
+			"ellipse",
+			"e1",
+			"1",
+			"2",
+			"3",
+			"4",
+		]);
+
+		assert.equal(command.execute(), "ellipse#e1 created");
+	});
+
+	it("creates line and returns summary", () => {
+		const store = storeWithDocument();
+		const command = new CreateShapeCommand(store, new ShapeRegistry(), [
+			"line",
+			"arrow1",
+			"280",
+			"130",
+			"520",
+			"130",
+			"black",
+		]);
+
+		assert.equal(command.execute(), "line#arrow1 created");
+	});
+
+	it("creates text and returns summary", () => {
+		const store = storeWithDocument();
+		const command = new CreateShapeCommand(store, new ShapeRegistry(), [
+			"text",
+			"title",
+			"20",
+			"40",
+			"My Diagram",
+		]);
+
+		assert.equal(command.execute(), "text#title created");
+		assert.equal(
+			(store.getDocument().findById("title") as { content: string }).content,
+			"My Diagram",
+		);
+	});
+
+});

@@ -107,4 +107,34 @@ describe("CommandDispatcher.create and tree", () => {
 		assert.ok(output?.includes("svg (800x600)"));
 		assert.ok(output?.includes("rect#bg"));
 	});
+
+	it("creates circle and text at root after init", () => {
+		const session = new EditorSession();
+		const dispatcher = new CommandDispatcher(session);
+		dispatcher.dispatch(["init"]);
+
+		assert.equal(
+			dispatcher.dispatch([
+				"create",
+				"text",
+				"title",
+				"20",
+				"40",
+				"My Diagram",
+			]),
+			"text#title created",
+		);
+		assert.equal(
+			dispatcher.dispatch([
+				"create",
+				"circle",
+				"c1",
+				"100",
+				"100",
+				"20",
+				"red",
+			]),
+			"circle#c1 created",
+		);
+	});
 });
