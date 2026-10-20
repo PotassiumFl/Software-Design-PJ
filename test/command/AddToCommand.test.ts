@@ -41,6 +41,18 @@ describe("AddToCommand", () => {
 		assert.equal(command.execute(), "error: not a container: box");
 	});
 
+	it("undo moves the shape back to its previous parent", () => {
+		const store = storeWithMarkersAndBox();
+		const command = new AddToCommand(store, "markers", "box");
+		command.execute();
+
+		assert.equal(command.undo(), "rect#box removed from g#markers");
+		const doc = store.getDocument();
+		assert.equal(doc.getRootShapes().some((shape) => shape.id === "box"), true);
+		const markers = doc.findById("markers") as GroupShape;
+		assert.equal(markers.getChildren().length, 1);
+	});
+
 	it("returns no such shape when member is missing", () => {
 		const store = storeWithMarkersAndBox();
 		const command = new AddToCommand(store, "markers", "r9");

@@ -34,6 +34,12 @@ describe("SvgReader", () => {
 		assert.ok(g1 instanceof GroupShape);
 		assert.equal(g1.getChildren().length, 2);
 		assert.ok(doc.findById("c1") instanceof CircleShape);
+
+		assert.deepEqual(
+			doc.getRootShapes().map((shape) => shape.id),
+			["rect1", "t1", "c1", "g1", "e1"],
+			"root sibling order must match other.svg in phase_cli_1 section 6",
+		);
 	});
 
 	it("returns cannot read when the file is missing", () => {

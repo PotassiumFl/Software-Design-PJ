@@ -18,6 +18,16 @@ function storeWithCircle(): DocumentStore {
 }
 
 describe("MoveShapeCommand", () => {
+	it("moves a rect with moved to absolute coordinates", () => {
+		const store = new DocumentStore();
+		const doc = new Document(800, 600);
+		doc.addRootShape(new RectShape("r1", 100, 20, 50, 40));
+		store.setDocument(doc);
+
+		const command = new MoveShapeCommand(store, "r1", 30, 6);
+		assert.equal(command.execute(), "rect#r1 moved to (130,26)");
+	});
+
 	it("moves a circle and returns phase_cli_1 summary", () => {
 		const store = storeWithCircle();
 		const command = new MoveShapeCommand(store, "c1", 30, 0);

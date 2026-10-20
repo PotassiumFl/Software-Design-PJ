@@ -36,13 +36,21 @@ describe("EditorSession IO lock (G S22)", () => {
 		assert.equal(session.runUndo(), "rect#r2 removed");
 	});
 
-	it("blocks undo after read", () => {
+	it("blocks undo immediately after read", () => {
+		const session = new EditorSession();
+		const otherSvg = path.join(fixturesDir, "other.svg");
+		session.runRead(otherSvg);
+
+		assert.equal(session.runUndo(), IO_LOCK);
+	});
+
+	it("allows undo after the next edit following read", () => {
 		const session = new EditorSession();
 		const otherSvg = path.join(fixturesDir, "other.svg");
 		session.runRead(otherSvg);
 		session.runCreate(["circle", "extra", "1", "1", "1"]);
 
-		assert.equal(session.runUndo(), IO_LOCK);
+		assert.equal(session.runUndo(), "circle#extra removed");
 	});
 
 	it("blocks undo after canvas resize with dimensions", () => {

@@ -2,8 +2,12 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { SetAttributeCommand } from "../../src/command/SetAttributeCommand.js";
+import { CircleShape } from "../../src/model/CircleShape.js";
 import { Document } from "../../src/model/Document.js";
 import { DocumentStore } from "../../src/model/DocumentStore.js";
+import { EllipseShape } from "../../src/model/EllipseShape.js";
+import { LineShape } from "../../src/model/LineShape.js";
+import { RectShape } from "../../src/model/RectShape.js";
 import { TextShape } from "../../src/model/TextShape.js";
 
 function storeWithTitle(): DocumentStore {
@@ -43,5 +47,67 @@ describe("SetAttributeCommand", () => {
 		const command = new SetAttributeCommand(store, "r9", "text", "x");
 
 		assert.equal(command.execute(), "error: no such shape: r9");
+	});
+
+	it("updates rect fill per phase_cli_1 set whitelist", () => {
+		const store = new DocumentStore();
+		const doc = new Document(800, 600);
+		doc.addRootShape(new RectShape("r1", 0, 0, 10, 10));
+		store.setDocument(doc);
+
+		const command = new SetAttributeCommand(store, "r1", "fill", "red");
+		assert.equal(command.execute(), "rect#r1 updated: fill=red");
+		assert.equal(
+			(store.getDocument().findById("r1") as RectShape).fill,
+			"red",
+		);
+	});
+
+	it("updates circle radius", () => {
+		const store = new DocumentStore();
+		const doc = new Document(800, 600);
+		doc.addRootShape(new CircleShape("c1", 50, 50, 10));
+		store.setDocument(doc);
+
+		const command = new SetAttributeCommand(store, "c1", "r", "9");
+		assert.equal(command.execute(), "circle#c1 updated: r=9");
+		assert.equal((store.getDocument().findById("c1") as CircleShape).r, 9);
+	});
+
+	it("updates ellipse radii and line stroke-width", () => {
+		const store = new DocumentStore();
+		const doc = new Document(800, 600);
+		doc.addRootShape(new EllipseShape("e1", 1, 2, 3, 4));
+		doc.addRootShape(new LineShape("ln", 0, 0, 10, 10, "black"));
+		store.setDocument(doc);
+
+		assert.equal(
+			new SetAttributeCommand(store, "e1", "rx", "5").execute(),
+			"ellipse#e1 updated: rx=5",
+		);
+		assert.equal(
+			new SetAttributeCommand(store, "ln", "stroke-width", "2").execute(),
+			"line#ln updated: stroke-width=2",
+		);
+	});
+
+	it("updates text position attributes", () => {
+		const store = storeWithTitle();
+		const command = new SetAttributeCommand(store, "title", "x", "30");
+
+		assert.equal(command.execute(), "text#title updated: x=30");
+		assert.equal((store.getDocument().findById("title") as TextShape).x, 30);
+	});
+
+	it("rejects attributes outside the whitelist", () => {
+		const store = new DocumentStore();
+		const doc = new Document(800, 600);
+		doc.addRootShape(new CircleShape("c1", 0, 0, 1));
+		store.setDocument(doc);
+
+		assert.equal(
+			new SetAttributeCommand(store, "c1", "opacity", "0.5").execute(),
+			"error: unknown attribute: opacity",
+		);
 	});
 });

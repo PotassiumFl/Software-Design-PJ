@@ -43,6 +43,16 @@ describe("UngroupCommand", () => {
 		);
 	});
 
+	it("undo restores the dissolved group and child order", () => {
+		const store = storeWithNestedGroup();
+		const command = new UngroupCommand(store, "cluster");
+		command.execute();
+
+		assert.equal(command.undo(), "g#cluster restored with 1 child");
+		assert.ok(store.getDocument().findById("cluster") instanceof GroupShape);
+		assert.ok(store.getDocument().findById("c1") instanceof CircleShape);
+	});
+
 	it("returns no such shape when id is missing", () => {
 		const store = storeWithNestedGroup();
 		const command = new UngroupCommand(store, "r9");

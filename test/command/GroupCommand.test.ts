@@ -55,6 +55,19 @@ describe("GroupCommand", () => {
 		assert.equal(command.execute(), "error: no such shape: r9");
 	});
 
+	it("undo restores members to their previous parents", () => {
+		const store = storeWithLooseShapes();
+		const command = new GroupCommand(store, "markers", "c1", "box");
+		command.execute();
+
+		assert.equal(command.undo(), "g#markers removed");
+		const doc = store.getDocument();
+		assert.equal(doc.findById("markers"), undefined);
+		assert.ok(doc.findById("c1") instanceof CircleShape);
+		assert.ok(doc.findById("box") instanceof RectShape);
+		assert.equal(doc.getRootShapes().length, 3);
+	});
+
 	it("returns id already exists when new group id is taken", () => {
 		const store = storeWithLooseShapes();
 		const command = new GroupCommand(store, "c1", "box");

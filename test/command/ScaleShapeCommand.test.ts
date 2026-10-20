@@ -5,6 +5,8 @@ import { INVALID_ARGUMENTS } from "../../src/command/CommandMessages.js";
 import { ScaleShapeCommand } from "../../src/command/ScaleShapeCommand.js";
 import { Document } from "../../src/model/Document.js";
 import { DocumentStore } from "../../src/model/DocumentStore.js";
+import { CircleShape } from "../../src/model/CircleShape.js";
+import { GroupShape } from "../../src/model/GroupShape.js";
 import { RectShape } from "../../src/model/RectShape.js";
 
 function storeWithRect(): DocumentStore {
@@ -42,6 +44,42 @@ describe("ScaleShapeCommand", () => {
 		const command = new ScaleShapeCommand(store, "r9", 2);
 
 		assert.equal(command.execute(), "error: no such shape: r9");
+	});
+
+	it("scales a circle leaf by factor", () => {
+		const store = new DocumentStore();
+		const doc = new Document(800, 600);
+		doc.addRootShape(new CircleShape("c1", 10, 20, 5, "red"));
+		store.setDocument(doc);
+
+		const command = new ScaleShapeCommand(store, "c1", 2);
+		assert.match(command.execute(), /^circle#c1 scaled/);
+		const circle = store.getDocument().findById("c1") as CircleShape;
+		assert.equal(circle.cx, 20);
+		assert.equal(circle.cy, 40);
+		assert.equal(circle.r, 10);
+	});
+
+	it("scales every descendant when the target is a group", () => {
+		const store = new DocumentStore();
+		const doc = new Document(800, 600);
+		doc.addRootShape(new GroupShape("markers"));
+		doc.addShapeToContainer(
+			"markers",
+			new CircleShape("c1", 10, 10, 5),
+		);
+		doc.addShapeToContainer(
+			"markers",
+			new RectShape("box", 20, 20, 10, 10),
+		);
+		store.setDocument(doc);
+
+		const command = new ScaleShapeCommand(store, "markers", 2);
+		assert.match(command.execute(), /^g#markers scaled by 2/);
+		const circle = store.getDocument().findById("c1") as CircleShape;
+		const box = store.getDocument().findById("box") as RectShape;
+		assert.equal(circle.cx, 20);
+		assert.equal(box.width, 20);
 	});
 
 	it("returns invalid arguments when factor is not numeric", () => {
