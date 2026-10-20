@@ -359,3 +359,50 @@ describe("CommandDispatcher F2 (S19–S21)", () => {
 		assert.ok(tree?.startsWith("svg (1024x768)"));
 	});
 });
+
+describe("CommandDispatcher IO (G S22–S24)", () => {
+	it("wires read and save commands", async () => {
+		const session = new EditorSession();
+		const dispatcher = new CommandDispatcher(session);
+		const { mkdtemp, writeFile, readFile } = await import("node:fs/promises");
+		const os = await import("node:os");
+		const path = await import("node:path");
+		const dir = await mkdtemp(path.join(os.tmpdir(), "svg-dispatch-"));
+		const filePath = path.join(dir, "tiny.svg");
+
+		dispatcher.dispatch(["init", "100", "100"]);
+		dispatcher.dispatch(["create", "rect", "r1", "0", "0", "50", "50"]);
+		assert.equal(
+			dispatcher.dispatch(["save", filePath]),
+			"saved to tiny.svg (1 elements)",
+		);
+		assert.equal(dispatcher.dispatch(["undo"]), IO_LOCK_MESSAGE);
+
+		await writeFile(
+			filePath,
+			[
+				'<?xml version="1.0" encoding="UTF-8"?>',
+				'<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">',
+				'<rect id="r1" x="0" y="0" width="50" height="50"/>',
+				"</svg>",
+			].join("\n"),
+		);
+
+		assert.match(
+			dispatcher.dispatch(["read", filePath]),
+			/^read tiny\.svg \(1 elements\)$/,
+		);
+
+		const saved = await readFile(filePath, "utf8");
+		dispatcher.dispatch(["set", "r1", "width", "80"]);
+		assert.equal(
+			dispatcher.dispatch(["save", filePath]),
+			"saved to tiny.svg (1 elements)",
+		);
+		const updated = await readFile(filePath, "utf8");
+		assert.notEqual(saved, updated);
+		assert.match(updated, /width="80"/);
+	});
+});
+
+const IO_LOCK_MESSAGE = "error: undo not allowed after io command";
