@@ -4,7 +4,14 @@ import { describe, it } from "node:test";
 import { ShapeRegistry } from "../../src/model/ShapeRegistry.js";
 
 describe("ShapeRegistry", () => {
-	const BUILTIN_TYPES = ["rect", "circle", "ellipse", "line", "text"] as const;
+	const BUILTIN_TYPES = [
+		"rect",
+		"circle",
+		"ellipse",
+		"line",
+		"text",
+		"g",
+	] as const;
 
 	for (const type of BUILTIN_TYPES) {
 		it(`registers builtin type ${type}`, () => {

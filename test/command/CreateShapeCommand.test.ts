@@ -141,5 +141,125 @@ describe("CreateShapeCommand builtin leaf shapes", () => {
 		assert.ok(title instanceof TextShape);
 		assert.equal(title.content, "My Diagram");
 	});
+});
 
+describe("CreateShapeCommand groups", () => {
+	it("creates empty group at root", () => {
+		const store = storeWithDocument();
+		const command = new CreateShapeCommand(store, new ShapeRegistry(), [
+			"g",
+			"flowchart",
+		]);
+
+		assert.equal(command.execute(), "g#flowchart created");
+		assert.equal(store.getDocument().findById("flowchart")?.id, "flowchart");
+	});
+
+	it("returns invalid arguments when group id is missing", () => {
+		const store = storeWithDocument();
+		const command = new CreateShapeCommand(store, new ShapeRegistry(), ["g"]);
+
+		assert.equal(command.execute(), INVALID_ARGUMENTS);
+	});
+});
+
+describe("CreateShapeCommand in container", () => {
+	it("creates rect inside group with in clause", () => {
+		const store = storeWithDocument();
+		const registry = new ShapeRegistry();
+		new CreateShapeCommand(store, registry, ["g", "node1"]).execute();
+
+		const command = new CreateShapeCommand(store, registry, [
+			"rect",
+			"start",
+			"120",
+			"100",
+			"160",
+			"60",
+			"#4a90d9",
+			"in",
+			"node1",
+		]);
+
+		assert.equal(command.execute(), "rect#start created in g#node1");
+	});
+
+	it("creates nested group with in clause", () => {
+		const store = storeWithDocument();
+		const registry = new ShapeRegistry();
+		new CreateShapeCommand(store, registry, ["g", "flowchart"]).execute();
+
+		assert.equal(
+			new CreateShapeCommand(store, registry, [
+				"g",
+				"node1",
+				"in",
+				"flowchart",
+			]).execute(),
+			"g#node1 created in g#flowchart",
+		);
+	});
+
+	it("creates text inside group", () => {
+		const store = storeWithDocument();
+		const registry = new ShapeRegistry();
+		new CreateShapeCommand(store, registry, ["g", "node1"]).execute();
+
+		assert.equal(
+			new CreateShapeCommand(store, registry, [
+				"text",
+				"start-label",
+				"155",
+				"135",
+				"开始",
+				"in",
+				"node1",
+			]).execute(),
+			"text#start-label created in g#node1",
+		);
+	});
+
+	it("returns no such container when parent is missing", () => {
+		const store = storeWithDocument();
+		const command = new CreateShapeCommand(store, new ShapeRegistry(), [
+			"rect",
+			"r1",
+			"0",
+			"0",
+			"1",
+			"1",
+			"in",
+			"node9",
+		]);
+
+		assert.equal(command.execute(), "error: no such container: node9");
+		assert.equal(store.getDocument().findById("r1"), undefined);
+	});
+
+	it("returns not a container when parent is a leaf", () => {
+		const store = storeWithDocument();
+		const registry = new ShapeRegistry();
+		new CreateShapeCommand(store, registry, [
+			"rect",
+			"start",
+			"0",
+			"0",
+			"10",
+			"10",
+		]).execute();
+
+		const command = new CreateShapeCommand(store, registry, [
+			"rect",
+			"r2",
+			"1",
+			"1",
+			"2",
+			"2",
+			"in",
+			"start",
+		]);
+
+		assert.equal(command.execute(), "error: not a container: start");
+		assert.equal(store.getDocument().findById("r2"), undefined);
+	});
 });

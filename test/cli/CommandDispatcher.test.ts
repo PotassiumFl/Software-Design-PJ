@@ -138,3 +138,40 @@ describe("CommandDispatcher.create and tree", () => {
 		);
 	});
 });
+
+describe("CommandDispatcher hierarchy (S12–S13)", () => {
+	it("runs flowchart skeleton from phase_cli_1 section 6", () => {
+		const session = new EditorSession();
+		const dispatcher = new CommandDispatcher(session);
+		dispatcher.dispatch(["init", "800", "600"]);
+
+		assert.equal(
+			dispatcher.dispatch(["create", "g", "flowchart"]),
+			"g#flowchart created",
+		);
+		assert.equal(
+			dispatcher.dispatch(["create", "g", "node1", "in", "flowchart"]),
+			"g#node1 created in g#flowchart",
+		);
+		assert.equal(
+			dispatcher.dispatch([
+				"create",
+				"rect",
+				"start",
+				"120",
+				"100",
+				"160",
+				"60",
+				"#4a90d9",
+				"in",
+				"node1",
+			]),
+			"rect#start created in g#node1",
+		);
+
+		const tree = dispatcher.dispatch(["tree"]);
+		assert.ok(tree?.includes("g#flowchart"));
+		assert.ok(tree?.includes("rect#start"));
+		assert.ok(tree?.includes("├──") || tree?.includes("└──"));
+	});
+});
