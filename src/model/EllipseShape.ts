@@ -7,7 +7,7 @@ export class EllipseShape extends Shape {
 		public cy: number,
 		public rx: number,
 		public ry: number,
-		public readonly fill?: string,
+		public fill?: string,
 	) {
 		super(id);
 	}

@@ -4,7 +4,16 @@ import type { Shape } from "../model/Shape.js";
 
 import type { UndoableCommand } from "./UndoableCommand.js";
 
+type MemberSnapshot = {
+	shape: Shape;
+	parent: GroupShape | null;
+	index: number;
+};
+
 export class GroupCommand implements UndoableCommand {
+	private readonly memberIds: string[];
+	private undoState: MemberSnapshot[] | undefined;
+
 	constructor(
 		private readonly store: DocumentStore,
 		private readonly newGroupId: string,
@@ -12,8 +21,6 @@ export class GroupCommand implements UndoableCommand {
 	) {
 		this.memberIds = memberIds;
 	}
-
-	private readonly memberIds: string[];
 
 	execute(): string {
 		const document = this.store.getDocument();
@@ -42,6 +49,15 @@ export class GroupCommand implements UndoableCommand {
 			}
 		}
 
+		this.undoState = members.map((member) => ({
+			shape: member,
+			parent: document.findParentContainer(member),
+			index: document.getShapeIndexInParent(
+				member,
+				document.findParentContainer(member),
+			),
+		}));
+
 		let insertIndex = document.getRootShapes().length;
 		for (const member of members) {
 			const parent = document.findParentContainer(member);
@@ -60,10 +76,33 @@ export class GroupCommand implements UndoableCommand {
 	}
 
 	undo(): string {
-		return "error: nothing to undo";
+		if (!this.undoState) {
+			return "error: nothing to undo";
+		}
+
+		const document = this.store.getDocument();
+		const group = document.findById(this.newGroupId);
+		if (!(group instanceof GroupShape)) {
+			return "error: nothing to undo";
+		}
+
+		for (const child of [...group.getChildren()]) {
+			group.removeChild(child);
+		}
+		document.removeGroupContainer(this.newGroupId);
+
+		for (const snapshot of this.undoState) {
+			document.reinsertShapeAt(
+				snapshot.shape,
+				snapshot.parent,
+				snapshot.index,
+			);
+		}
+
+		return `g#${this.newGroupId} removed`;
 	}
 
 	redo(): string {
-		return "error: nothing to redo";
+		return this.execute();
 	}
 }

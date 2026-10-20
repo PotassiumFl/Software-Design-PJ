@@ -8,34 +8,51 @@ import { TextShape } from "../model/TextShape.js";
 import type { Shape } from "../model/Shape.js";
 
 export class TreeFormatter {
-	static render(document: Document): string {
+	static render(document: Document, rootId?: string): string {
+		if (rootId !== undefined) {
+			const shape = document.findById(rootId);
+			if (!shape) {
+				return `error: no such shape: ${rootId}`;
+			}
+			const lines = [TreeFormatter.formatRootLine(shape)];
+			if (shape instanceof GroupShape) {
+				lines.push(
+					...TreeFormatter.renderSiblingTrees(shape.getChildren(), ""),
+				);
+			}
+			return lines.join("\n");
+		}
+
 		const lines: string[] = [`svg (${document.width}x${document.height})`];
 		const roots = document.getRootShapes();
-		for (let i = 0; i < roots.length; i++) {
-			lines.push(
-				...TreeFormatter.renderShapeTree(roots[i]!, "", i === roots.length - 1),
-			);
-		}
+		lines.push(...TreeFormatter.renderSiblingTrees(roots, ""));
 		return lines.join("\n");
 	}
 
-	private static renderShapeTree(
-		shape: Shape,
+	private static renderSiblingTrees(
+		shapes: readonly Shape[],
 		prefix: string,
-		isLast: boolean,
 	): string[] {
-		const connector = isLast ? "└── " : "├── ";
-		const lines: string[] = [`${prefix}${connector}${TreeFormatter.formatShape(shape)}`];
+		const labels = shapes.map((shape) => TreeFormatter.shapeLabel(shape));
+		const width = Math.max(...labels.map((label) => label.length), 0);
+		const lines: string[] = [];
 
-		if (shape instanceof GroupShape) {
-			const children = shape.getChildren();
-			const childPrefix = prefix + (isLast ? "    " : "│   ");
-			for (let i = 0; i < children.length; i++) {
+		for (let i = 0; i < shapes.length; i++) {
+			const shape = shapes[i]!;
+			const isLast = i === shapes.length - 1;
+			const connector = isLast ? "└── " : "├── ";
+			const attrs = TreeFormatter.shapeAttributes(shape);
+			const label = labels[i]!;
+			const gap = Math.max(4, width - label.length + 1);
+			const spacer = attrs ? " ".repeat(gap) : "";
+			lines.push(`${prefix}${connector}${label}${spacer}${attrs}`);
+
+			if (shape instanceof GroupShape) {
+				const childPrefix = prefix + (isLast ? "    " : "│   ");
 				lines.push(
-					...TreeFormatter.renderShapeTree(
-						children[i]!,
+					...TreeFormatter.renderSiblingTrees(
+						shape.getChildren(),
 						childPrefix,
-						i === children.length - 1,
 					),
 				);
 			}
@@ -44,14 +61,41 @@ export class TreeFormatter {
 		return lines;
 	}
 
-	private static formatShape(shape: Shape): string {
+	private static formatRootLine(shape: Shape): string {
+		const label = TreeFormatter.shapeLabel(shape);
+		const attrs = TreeFormatter.shapeAttributes(shape);
+		return attrs ? `${label}  ${attrs}` : label;
+	}
+
+	private static shapeLabel(shape: Shape): string {
 		if (shape instanceof GroupShape) {
 			return `g#${shape.id}`;
+		}
+		if (shape instanceof RectShape) {
+			return `rect#${shape.id}`;
+		}
+		if (shape instanceof CircleShape) {
+			return `circle#${shape.id}`;
+		}
+		if (shape instanceof EllipseShape) {
+			return `ellipse#${shape.id}`;
+		}
+		if (shape instanceof LineShape) {
+			return `line#${shape.id}`;
+		}
+		if (shape instanceof TextShape) {
+			return `text#${shape.id}`;
+		}
+		return shape.id;
+	}
+
+	private static shapeAttributes(shape: Shape): string {
+		if (shape instanceof GroupShape) {
+			return "";
 		}
 
 		if (shape instanceof RectShape) {
 			const parts = [
-				`rect#${shape.id}`,
 				`x=${shape.x} y=${shape.y} w=${shape.width} h=${shape.height}`,
 			];
 			if (shape.fill !== undefined) {
@@ -62,7 +106,6 @@ export class TreeFormatter {
 
 		if (shape instanceof CircleShape) {
 			const parts = [
-				`circle#${shape.id}`,
 				`cx=${shape.cx} cy=${shape.cy} r=${shape.r}`,
 			];
 			if (shape.fill !== undefined) {
@@ -73,7 +116,6 @@ export class TreeFormatter {
 
 		if (shape instanceof EllipseShape) {
 			const parts = [
-				`ellipse#${shape.id}`,
 				`cx=${shape.cx} cy=${shape.cy} rx=${shape.rx} ry=${shape.ry}`,
 			];
 			if (shape.fill !== undefined) {
@@ -84,7 +126,6 @@ export class TreeFormatter {
 
 		if (shape instanceof LineShape) {
 			const parts = [
-				`line#${shape.id}`,
 				`(${shape.x1},${shape.y1}) -> (${shape.x2},${shape.y2})`,
 			];
 			if (shape.stroke !== undefined) {
@@ -94,9 +135,9 @@ export class TreeFormatter {
 		}
 
 		if (shape instanceof TextShape) {
-			return `text#${shape.id} (${shape.x},${shape.y}) "${shape.content}"`;
+			return `(${shape.x},${shape.y}) "${shape.content}"`;
 		}
 
-		return `${shape.id}`;
+		return "";
 	}
 }

@@ -60,6 +60,31 @@ export class Document {
 		parent.insertChildAt(index, shape);
 	}
 
+	insertNewGroupAt(
+		parent: GroupShape | null,
+		index: number,
+		group: GroupShape,
+	): void {
+		this.registerShape(group);
+		if (parent === null) {
+			this.rootShapes.splice(index, 0, group);
+			return;
+		}
+		parent.insertChildAt(index, group);
+	}
+
+	removeGroupContainer(groupId: string): void {
+		const group = this.shapesById.get(groupId);
+		if (!(group instanceof GroupShape)) {
+			throw new Error(`no such shape: ${groupId}`);
+		}
+		if (group.getChildren().length > 0) {
+			throw new Error(`not empty: ${groupId}`);
+		}
+		this.detachShape(group);
+		this.shapesById.delete(groupId);
+	}
+
 	getRootShapes(): readonly Shape[] {
 		return this.rootShapes;
 	}
@@ -109,7 +134,7 @@ export class Document {
 		parent: GroupShape | null,
 		index: number,
 	): void {
-		this.registerShape(shape);
+		this.registerShapeTree(shape);
 		if (parent === null) {
 			this.rootShapes.splice(index, 0, shape);
 			return;

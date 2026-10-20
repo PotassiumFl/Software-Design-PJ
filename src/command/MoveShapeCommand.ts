@@ -1,6 +1,7 @@
 import { CircleShape } from "../model/CircleShape.js";
 import { DocumentStore } from "../model/DocumentStore.js";
 import { GroupShape } from "../model/GroupShape.js";
+import { RectShape } from "../model/RectShape.js";
 import { shapeTypeLabel, translateShape } from "../model/ShapeTransform.js";
 import type { Shape } from "../model/Shape.js";
 
@@ -46,19 +47,22 @@ export class MoveShapeCommand implements UndoableCommand {
 			return `g#${this.shapeId} moved back by (${-this.dx},${-this.dy})`;
 		}
 
-		if (shape instanceof CircleShape) {
-			translateShape(shape, dx, dy);
-			if (direction === "forward") {
-				return `circle#${this.shapeId} moved to (${shape.cx},${shape.cy})`;
-			}
-			return `circle#${this.shapeId} moved back to (${shape.cx},${shape.cy})`;
-		}
-
-		const type = shapeTypeLabel(shape);
 		translateShape(shape, dx, dy);
+		const type = shapeTypeLabel(shape);
+		const position = MoveShapeCommand.formatPosition(shape);
 		if (direction === "forward") {
-			return `${type}#${this.shapeId} moved by (${dx},${dy})`;
+			return `${type}#${this.shapeId} moved to ${position}`;
 		}
-		return `${type}#${this.shapeId} moved back by (${-dx},${-dy})`;
+		return `${type}#${this.shapeId} moved back to ${position}`;
+	}
+
+	private static formatPosition(shape: Shape): string {
+		if (shape instanceof CircleShape) {
+			return `(${shape.cx},${shape.cy})`;
+		}
+		if (shape instanceof RectShape) {
+			return `(${shape.x},${shape.y})`;
+		}
+		return `(0,0)`;
 	}
 }

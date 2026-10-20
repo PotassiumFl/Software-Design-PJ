@@ -29,7 +29,7 @@ export class CommandDispatcher {
 		}
 
 		if (command === "tree") {
-			return this.session.runTree();
+			return this.session.runTree(tokens[1]);
 		}
 
 		if (command === "move") {

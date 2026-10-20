@@ -7,7 +7,8 @@ export class LineShape extends Shape {
 		public y1: number,
 		public x2: number,
 		public y2: number,
-		public readonly stroke?: string,
+		public stroke?: string,
+		public strokeWidth?: number,
 	) {
 		super(id);
 	}

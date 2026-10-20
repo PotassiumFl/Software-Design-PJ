@@ -149,11 +149,11 @@ export class EditorSession {
 		return this.commandHistory.redo();
 	}
 
-	runTree(): string {
+	runTree(rootId?: string): string {
 		if (!this.hasDocument) {
 			return this.noDocumentMessage();
 		}
-		return TreeFormatter.render(this.documentStore.getDocument());
+		return TreeFormatter.render(this.documentStore.getDocument(), rootId);
 	}
 
 	runShow(shapeId: string): string {
@@ -251,8 +251,7 @@ export class EditorSession {
 	}
 
 	private clearIoLockAfterEdit(): void {
-		if (!this.ioLockedAfterRead) {
-			this.ioLocked = false;
-		}
+		this.ioLocked = false;
+		this.ioLockedAfterRead = false;
 	}
 }
