@@ -103,6 +103,34 @@ export class CommandDispatcher {
 			return this.session.runAddTo(containerId, shapeId);
 		}
 
+		if (command === "show") {
+			const id = tokens[1];
+			if (!id) {
+				return INVALID_ARGUMENTS;
+			}
+			return this.session.runShow(id);
+		}
+
+		if (command === "front" || command === "back") {
+			const id = tokens[1];
+			if (!id) {
+				return INVALID_ARGUMENTS;
+			}
+			return this.session.runZOrder(id, command);
+		}
+
+		if (command === "canvas") {
+			if (tokens.length === 1) {
+				return this.session.runCanvas();
+			}
+			if (tokens.length >= 3) {
+				const width = Number(tokens[1]);
+				const height = Number(tokens[2]);
+				return this.session.runCanvas(width, height);
+			}
+			return INVALID_ARGUMENTS;
+		}
+
 		return `error: unknown command: ${command}`;
 	}
 }

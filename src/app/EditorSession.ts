@@ -8,8 +8,12 @@ import { UngroupCommand } from "../command/UngroupCommand.js";
 import { MoveShapeCommand } from "../command/MoveShapeCommand.js";
 import { ScaleShapeCommand } from "../command/ScaleShapeCommand.js";
 import { SetAttributeCommand } from "../command/SetAttributeCommand.js";
+import { ResizeCanvasCommand } from "../command/ResizeCanvasCommand.js";
+import { ZOrderCommand } from "../command/ZOrderCommand.js";
+import type { ZOrderDirection } from "../command/ZOrderCommand.js";
 import { DocumentStore } from "../model/DocumentStore.js";
 import { ShapeRegistry } from "../model/ShapeRegistry.js";
+import { ShowFormatter } from "../cli/ShowFormatter.js";
 import { TreeFormatter } from "../cli/TreeFormatter.js";
 
 export class EditorSession {
@@ -128,5 +132,34 @@ export class EditorSession {
 			return this.noDocumentMessage();
 		}
 		return TreeFormatter.render(this.documentStore.getDocument());
+	}
+
+	runShow(shapeId: string): string {
+		if (!this.hasDocument) {
+			return this.noDocumentMessage();
+		}
+		return ShowFormatter.render(this.documentStore.getDocument(), shapeId);
+	}
+
+	runZOrder(shapeId: string, direction: ZOrderDirection): string {
+		if (!this.hasDocument) {
+			return this.noDocumentMessage();
+		}
+		return this.commandHistory.execute(
+			new ZOrderCommand(this.documentStore, shapeId, direction),
+		);
+	}
+
+	runCanvas(width?: number, height?: number): string {
+		if (!this.hasDocument) {
+			return this.noDocumentMessage();
+		}
+		const document = this.documentStore.getDocument();
+		if (width === undefined || height === undefined) {
+			return `canvas ${document.width}x${document.height}`;
+		}
+		return this.commandHistory.execute(
+			new ResizeCanvasCommand(this.documentStore, width, height),
+		);
 	}
 }

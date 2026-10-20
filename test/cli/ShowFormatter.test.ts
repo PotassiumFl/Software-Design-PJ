@@ -9,9 +9,11 @@ import { GroupShape } from "../../src/model/GroupShape.js";
 describe("ShowFormatter", () => {
 	it("renders phase_cli_1 section 5.2 for a shape in a group", () => {
 		const doc = new Document(800, 600);
-		const markers = new GroupShape("markers");
-		doc.addRootShape(markers);
-		markers.addChild(new CircleShape("c1", 100, 100, 20, "red"));
+		doc.addRootShape(new GroupShape("markers"));
+		doc.addShapeToContainer(
+			"markers",
+			new CircleShape("c1", 100, 100, 20, "red"),
+		);
 
 		const output = ShowFormatter.render(doc, "c1");
 
@@ -32,7 +34,7 @@ describe("ShowFormatter", () => {
 		const output = ShowFormatter.render(doc, "c1");
 
 		assert.match(output, /^circle#c1  parent=canvas/m);
-		assert.match(output, /\n  cx=50 cy=50 r=10\n$/);
+		assert.match(output, /\n  cx=50 cy=50 r=10$/);
 	});
 
 	it("returns no such shape for unknown id", () => {

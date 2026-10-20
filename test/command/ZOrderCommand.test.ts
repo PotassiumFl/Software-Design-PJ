@@ -42,10 +42,15 @@ describe("ZOrderCommand", () => {
 	it("reorders within a group container", () => {
 		const store = new DocumentStore();
 		const doc = new Document(800, 600);
-		const markers = new GroupShape("markers");
-		doc.addRootShape(markers);
-		markers.addChild(new CircleShape("c1", 100, 100, 20, "red"));
-		markers.addChild(new RectShape("box", 200, 80, 60, 60, "#3366ff"));
+		doc.addRootShape(new GroupShape("markers"));
+		doc.addShapeToContainer(
+			"markers",
+			new CircleShape("c1", 100, 100, 20, "red"),
+		);
+		doc.addShapeToContainer(
+			"markers",
+			new RectShape("box", 200, 80, 60, 60, "#3366ff"),
+		);
 		store.setDocument(doc);
 
 		const command = new ZOrderCommand(store, "c1", "front");

@@ -6,9 +6,59 @@ export class Document {
 	private readonly shapesById = new Map<string, Shape>();
 
 	constructor(
-		public readonly width: number,
-		public readonly height: number,
+		public width: number,
+		public height: number,
 	) {}
+
+	resizeCanvas(width: number, height: number): void {
+		this.width = width;
+		this.height = height;
+	}
+
+	moveShapeToFront(shapeId: string): number {
+		const shape = this.shapesById.get(shapeId);
+		if (!shape) {
+			throw new Error(`no such shape: ${shapeId}`);
+		}
+		const parent = this.findParentContainer(shape);
+		const previousIndex = this.getShapeIndexInParent(shape, parent);
+		this.detachShape(shape);
+		if (parent === null) {
+			this.rootShapes.push(shape);
+		} else {
+			parent.addChild(shape);
+		}
+		return previousIndex;
+	}
+
+	moveShapeToBack(shapeId: string): number {
+		const shape = this.shapesById.get(shapeId);
+		if (!shape) {
+			throw new Error(`no such shape: ${shapeId}`);
+		}
+		const parent = this.findParentContainer(shape);
+		const previousIndex = this.getShapeIndexInParent(shape, parent);
+		this.detachShape(shape);
+		if (parent === null) {
+			this.rootShapes.unshift(shape);
+		} else {
+			parent.insertChildAt(0, shape);
+		}
+		return previousIndex;
+	}
+
+	reinsertShapeAt(
+		shape: Shape,
+		parent: GroupShape | null,
+		index: number,
+	): void {
+		this.detachShape(shape);
+		if (parent === null) {
+			this.rootShapes.splice(index, 0, shape);
+			return;
+		}
+		parent.insertChildAt(index, shape);
+	}
 
 	getRootShapes(): readonly Shape[] {
 		return this.rootShapes;
