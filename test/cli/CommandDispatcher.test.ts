@@ -46,14 +46,65 @@ describe("CommandDispatcher.init", () => {
 		assert.equal(session.hasDocument, true);
 	});
 
-	it("still reports unknown for unimplemented commands after init", () => {
-		const session = new EditorSession();
-		const dispatcher = new CommandDispatcher(session);
-		dispatcher.dispatch(["init", "100", "100"]);
+});
 
+describe("CommandDispatcher.create and tree", () => {
+	it("requires a document before create", () => {
+		const dispatcher = new CommandDispatcher(new EditorSession());
 		assert.equal(
 			dispatcher.dispatch(["create", "rect", "r", "0", "0", "1", "1"]),
-			"error: unknown command: create",
+			"error: no document. use 'init' or 'read' first",
 		);
+	});
+
+	it("creates rect after init", () => {
+		const session = new EditorSession();
+		const dispatcher = new CommandDispatcher(session);
+		dispatcher.dispatch(["init", "800", "600"]);
+
+		assert.equal(
+			dispatcher.dispatch([
+				"create",
+				"rect",
+				"bg",
+				"0",
+				"0",
+				"100",
+				"50",
+				"#ffffff",
+			]),
+			"rect#bg created",
+		);
+	});
+
+	it("reports unknown shape type for create box", () => {
+		const session = new EditorSession();
+		const dispatcher = new CommandDispatcher(session);
+		dispatcher.dispatch(["init"]);
+
+		assert.equal(
+			dispatcher.dispatch([
+				"create",
+				"box",
+				"n1",
+				"0",
+				"0",
+				"10",
+				"10",
+				"title",
+			]),
+			"error: unknown shape type: box (is the plugin loaded?)",
+		);
+	});
+
+	it("renders tree for current document", () => {
+		const session = new EditorSession();
+		const dispatcher = new CommandDispatcher(session);
+		dispatcher.dispatch(["init", "800", "600"]);
+		dispatcher.dispatch(["create", "rect", "bg", "0", "0", "800", "600", "#ffffff"]);
+
+		const output = dispatcher.dispatch(["tree"]);
+		assert.ok(output?.includes("svg (800x600)"));
+		assert.ok(output?.includes("rect#bg"));
 	});
 });
