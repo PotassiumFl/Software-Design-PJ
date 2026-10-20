@@ -1,6 +1,7 @@
 import { CircleShape } from "../model/CircleShape.js";
 import { Document } from "../model/Document.js";
 import { EllipseShape } from "../model/EllipseShape.js";
+import { GroupShape } from "../model/GroupShape.js";
 import { LineShape } from "../model/LineShape.js";
 import { RectShape } from "../model/RectShape.js";
 import { TextShape } from "../model/TextShape.js";
@@ -9,13 +10,45 @@ import type { Shape } from "../model/Shape.js";
 export class TreeFormatter {
 	static render(document: Document): string {
 		const lines: string[] = [`svg (${document.width}x${document.height})`];
-		for (const shape of document.getRootShapes()) {
-			lines.push(TreeFormatter.formatShape(shape));
+		const roots = document.getRootShapes();
+		for (let i = 0; i < roots.length; i++) {
+			lines.push(
+				...TreeFormatter.renderShapeTree(roots[i]!, "", i === roots.length - 1),
+			);
 		}
 		return lines.join("\n");
 	}
 
+	private static renderShapeTree(
+		shape: Shape,
+		prefix: string,
+		isLast: boolean,
+	): string[] {
+		const connector = isLast ? "└── " : "├── ";
+		const lines: string[] = [`${prefix}${connector}${TreeFormatter.formatShape(shape)}`];
+
+		if (shape instanceof GroupShape) {
+			const children = shape.getChildren();
+			const childPrefix = prefix + (isLast ? "    " : "│   ");
+			for (let i = 0; i < children.length; i++) {
+				lines.push(
+					...TreeFormatter.renderShapeTree(
+						children[i]!,
+						childPrefix,
+						i === children.length - 1,
+					),
+				);
+			}
+		}
+
+		return lines;
+	}
+
 	private static formatShape(shape: Shape): string {
+		if (shape instanceof GroupShape) {
+			return `g#${shape.id}`;
+		}
+
 		if (shape instanceof RectShape) {
 			const parts = [
 				`rect#${shape.id}`,

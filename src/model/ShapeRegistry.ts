@@ -6,6 +6,7 @@ export class ShapeRegistry {
 		"ellipse",
 		"line",
 		"text",
+		"g",
 	]);
 
 	isKnownType(type: string): boolean {
