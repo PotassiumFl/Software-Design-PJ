@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "cli": "tsx src/cli/Cli.ts",
+    "test": "tsx --test test/**/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
