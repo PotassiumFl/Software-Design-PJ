@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 
+import { NO_SAVE_PATH } from "../../src/command/CommandMessages.js";
 import { EditorSession } from "../../src/app/EditorSession.js";
 
 const IO_LOCK = "error: undo not allowed after io command";
@@ -74,7 +75,6 @@ describe("EditorSession read and save (G S23–S24)", () => {
 		const dir = await mkdtemp(path.join(os.tmpdir(), "svg-save-"));
 		const filePath = path.join(dir, "demo.svg");
 		session.runInit();
-		session.runCreate(["rect", "bg", "0", "0", "800", "600", "#fff"]);
 		session.runCreate(["circle", "c1", "100", "100", "20", "red"]);
 		session.runCreate(["rect", "box", "200", "80", "60", "60", "#3366ff"]);
 		session.runGroup("markers", ["c1", "box"]);
@@ -90,6 +90,24 @@ describe("EditorSession read and save (G S23–S24)", () => {
 
 		session.runRead(sourcePath);
 		assert.equal(session.runSave(), "saved to other.svg (0 elements)");
+	});
+
+	it("save without path reuses the path from a prior explicit save", async () => {
+		const session = new EditorSession();
+		const dir = await mkdtemp(path.join(os.tmpdir(), "svg-save-again-"));
+		const filePath = path.join(dir, "1.svg");
+		session.runInit();
+		session.runCreate(["rect", "r1", "0", "0", "10", "10"]);
+
+		assert.equal(session.runSave(filePath), "saved to 1.svg (1 elements)");
+		assert.equal(session.runSave(), "saved to 1.svg (1 elements)");
+	});
+
+	it("reports no save path after init when save has no argument", () => {
+		const session = new EditorSession();
+		session.runInit();
+
+		assert.equal(session.runSave(), NO_SAVE_PATH);
 	});
 
 	it("returns cannot read for a missing file", () => {

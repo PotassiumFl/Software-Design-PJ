@@ -131,6 +131,19 @@ export class CommandDispatcher {
 			return INVALID_ARGUMENTS;
 		}
 
+		if (command === "read") {
+			const filePath = tokens[1];
+			if (!filePath) {
+				return INVALID_ARGUMENTS;
+			}
+			return this.session.runRead(filePath);
+		}
+
+		if (command === "save") {
+			const filePath = tokens[1];
+			return this.session.runSave(filePath);
+		}
+
 		return `error: unknown command: ${command}`;
 	}
 }

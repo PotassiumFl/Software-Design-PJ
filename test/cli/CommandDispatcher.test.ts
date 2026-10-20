@@ -388,10 +388,8 @@ describe("CommandDispatcher IO (G S22–S24)", () => {
 			].join("\n"),
 		);
 
-		assert.match(
-			dispatcher.dispatch(["read", filePath]),
-			/^read tiny\.svg \(1 elements\)$/,
-		);
+		const readOutput = dispatcher.dispatch(["read", filePath]);
+		assert.match(readOutput!, /^read tiny\.svg \(1 elements\)$/);
 
 		const saved = await readFile(filePath, "utf8");
 		dispatcher.dispatch(["set", "r1", "width", "80"]);
@@ -402,6 +400,27 @@ describe("CommandDispatcher IO (G S22–S24)", () => {
 		const updated = await readFile(filePath, "utf8");
 		assert.notEqual(saved, updated);
 		assert.match(updated, /width="80"/);
+	});
+
+	it("allows bare save after an explicit save path", async () => {
+		const session = new EditorSession();
+		const dispatcher = new CommandDispatcher(session);
+		const { mkdtemp } = await import("node:fs/promises");
+		const os = await import("node:os");
+		const path = await import("node:path");
+		const dir = await mkdtemp(path.join(os.tmpdir(), "svg-bare-save-"));
+		const filePath = path.join(dir, "1.svg");
+
+		dispatcher.dispatch(["init"]);
+		dispatcher.dispatch(["create", "rect", "r1", "0", "0", "1", "1"]);
+		assert.equal(
+			dispatcher.dispatch(["save", filePath]),
+			"saved to 1.svg (1 elements)",
+		);
+		assert.equal(
+			dispatcher.dispatch(["save"]),
+			"saved to 1.svg (1 elements)",
+		);
 	});
 });
 

@@ -22,10 +22,10 @@ describe("SvgReader", () => {
 			"warning: assigned id rect1 to unnamed <rect>",
 		]);
 		assert.equal(result.elementCount, 7);
-		assert.equal(result.document.width, 400);
-		assert.equal(result.document.height, 300);
 
-		const doc = result.document;
+		const doc = result.document!;
+		assert.equal(doc.width, 400);
+		assert.equal(doc.height, 300);
 		const bg = doc.findById("rect1");
 		assert.ok(bg instanceof RectShape);
 		assert.equal(bg.fill, "#ffffff");

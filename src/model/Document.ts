@@ -69,7 +69,7 @@ export class Document {
 	}
 
 	addRootShape(shape: Shape): void {
-		this.registerShape(shape);
+		this.registerShapeTree(shape);
 		this.rootShapes.push(shape);
 	}
 
@@ -190,6 +190,15 @@ export class Document {
 			throw new Error(`id already exists: ${shape.id}`);
 		}
 		this.shapesById.set(shape.id, shape);
+	}
+
+	private registerShapeTree(shape: Shape): void {
+		this.registerShape(shape);
+		if (shape instanceof GroupShape) {
+			for (const child of shape.getChildren()) {
+				this.registerShapeTree(child);
+			}
+		}
 	}
 
 	private detachShape(shape: Shape): void {
