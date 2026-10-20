@@ -67,3 +67,48 @@ export function shapeTypeLabel(shape: Shape): string {
 	}
 	return shape.id;
 }
+
+export function scaleShape(shape: Shape, factor: number): void {
+	if (shape instanceof GroupShape) {
+		for (const child of shape.getChildren()) {
+			scaleShape(child, factor);
+		}
+		return;
+	}
+
+	if (shape instanceof RectShape) {
+		shape.x *= factor;
+		shape.y *= factor;
+		shape.width *= factor;
+		shape.height *= factor;
+		return;
+	}
+
+	if (shape instanceof CircleShape) {
+		shape.cx *= factor;
+		shape.cy *= factor;
+		shape.r *= factor;
+		return;
+	}
+
+	if (shape instanceof EllipseShape) {
+		shape.cx *= factor;
+		shape.cy *= factor;
+		shape.rx *= factor;
+		shape.ry *= factor;
+		return;
+	}
+
+	if (shape instanceof LineShape) {
+		shape.x1 *= factor;
+		shape.y1 *= factor;
+		shape.x2 *= factor;
+		shape.y2 *= factor;
+		return;
+	}
+
+	if (shape instanceof TextShape) {
+		shape.x *= factor;
+		shape.y *= factor;
+	}
+}

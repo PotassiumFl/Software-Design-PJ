@@ -5,7 +5,7 @@ export class CircleShape extends Shape {
 		id: string,
 		public cx: number,
 		public cy: number,
-		public readonly r: number,
+		public r: number,
 		public readonly fill?: string,
 	) {
 		super(id);

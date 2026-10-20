@@ -17,4 +17,8 @@ export class GroupShape extends Shape {
 			this.children.splice(index, 1);
 		}
 	}
+
+	insertChildAt(index: number, shape: Shape): void {
+		this.children.splice(index, 0, shape);
+	}
 }

@@ -5,7 +5,7 @@ export class TextShape extends Shape {
 		id: string,
 		public x: number,
 		public y: number,
-		public readonly content: string,
+		public content: string,
 	) {
 		super(id);
 	}

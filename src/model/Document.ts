@@ -32,6 +32,41 @@ export class Document {
 		this.unregisterShapeRecursive(shape);
 	}
 
+	findParentContainer(shape: Shape): GroupShape | null {
+		for (const root of this.rootShapes) {
+			if (root === shape) {
+				return null;
+			}
+			if (root instanceof GroupShape) {
+				const parent = this.findParentInGroup(root, shape);
+				if (parent !== undefined) {
+					return parent;
+				}
+			}
+		}
+		throw new Error(`no such shape: ${shape.id}`);
+	}
+
+	getShapeIndexInParent(shape: Shape, parent: GroupShape | null): number {
+		if (parent === null) {
+			return this.rootShapes.indexOf(shape);
+		}
+		return parent.getChildren().indexOf(shape);
+	}
+
+	restoreDeletedShape(
+		shape: Shape,
+		parent: GroupShape | null,
+		index: number,
+	): void {
+		this.registerShape(shape);
+		if (parent === null) {
+			this.rootShapes.splice(index, 0, shape);
+			return;
+		}
+		parent.insertChildAt(index, shape);
+	}
+
 	addShapeToContainer(containerId: string, shape: Shape): void {
 		const container = this.shapesById.get(containerId);
 		if (!container) {
@@ -78,6 +113,24 @@ export class Document {
 		}
 
 		return false;
+	}
+
+	private findParentInGroup(
+		group: GroupShape,
+		target: Shape,
+	): GroupShape | null | undefined {
+		if (group.getChildren().includes(target)) {
+			return group;
+		}
+		for (const child of group.getChildren()) {
+			if (child instanceof GroupShape) {
+				const parent = this.findParentInGroup(child, target);
+				if (parent !== undefined) {
+					return parent;
+				}
+			}
+		}
+		return undefined;
 	}
 
 	private unregisterShapeRecursive(shape: Shape): void {

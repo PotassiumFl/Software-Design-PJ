@@ -5,8 +5,8 @@ export class EllipseShape extends Shape {
 		id: string,
 		public cx: number,
 		public cy: number,
-		public readonly rx: number,
-		public readonly ry: number,
+		public rx: number,
+		public ry: number,
 		public readonly fill?: string,
 	) {
 		super(id);

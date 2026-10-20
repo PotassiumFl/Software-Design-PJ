@@ -50,6 +50,33 @@ export class CommandDispatcher {
 			return this.session.runRedo();
 		}
 
+		if (command === "delete") {
+			const id = tokens[1];
+			if (!id) {
+				return INVALID_ARGUMENTS;
+			}
+			return this.session.runDelete(id);
+		}
+
+		if (command === "set") {
+			const id = tokens[1];
+			const attribute = tokens[2];
+			const value = tokens[3];
+			if (!id || attribute === undefined || value === undefined) {
+				return INVALID_ARGUMENTS;
+			}
+			return this.session.runSet(id, attribute, value);
+		}
+
+		if (command === "scale") {
+			const id = tokens[1];
+			const factor = tokens.length >= 3 ? Number(tokens[2]) : Number.NaN;
+			if (!id) {
+				return INVALID_ARGUMENTS;
+			}
+			return this.session.runScale(id, factor);
+		}
+
 		return `error: unknown command: ${command}`;
 	}
 }

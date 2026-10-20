@@ -1,7 +1,10 @@
 import { CommandHistory } from "./CommandHistory.js";
 import { CreateShapeCommand } from "../command/CreateShapeCommand.js";
 import { InitDocumentCommand } from "../command/InitDocumentCommand.js";
+import { DeleteShapeCommand } from "../command/DeleteShapeCommand.js";
 import { MoveShapeCommand } from "../command/MoveShapeCommand.js";
+import { ScaleShapeCommand } from "../command/ScaleShapeCommand.js";
+import { SetAttributeCommand } from "../command/SetAttributeCommand.js";
 import { DocumentStore } from "../model/DocumentStore.js";
 import { ShapeRegistry } from "../model/ShapeRegistry.js";
 import { TreeFormatter } from "../cli/TreeFormatter.js";
@@ -47,6 +50,38 @@ export class EditorSession {
 		}
 		return this.commandHistory.execute(
 			new MoveShapeCommand(this.documentStore, shapeId, dx, dy),
+		);
+	}
+
+	runDelete(shapeId: string): string {
+		if (!this.hasDocument) {
+			return this.noDocumentMessage();
+		}
+		return this.commandHistory.execute(
+			new DeleteShapeCommand(this.documentStore, shapeId),
+		);
+	}
+
+	runSet(shapeId: string, attribute: string, value: string): string {
+		if (!this.hasDocument) {
+			return this.noDocumentMessage();
+		}
+		return this.commandHistory.execute(
+			new SetAttributeCommand(
+				this.documentStore,
+				shapeId,
+				attribute,
+				value,
+			),
+		);
+	}
+
+	runScale(shapeId: string, factor: number): string {
+		if (!this.hasDocument) {
+			return this.noDocumentMessage();
+		}
+		return this.commandHistory.execute(
+			new ScaleShapeCommand(this.documentStore, shapeId, factor),
 		);
 	}
 

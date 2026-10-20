@@ -5,8 +5,8 @@ export class RectShape extends Shape {
 		id: string,
 		public x: number,
 		public y: number,
-		public readonly width: number,
-		public readonly height: number,
+		public width: number,
+		public height: number,
 		public readonly fill?: string,
 	) {
 		super(id);
