@@ -1,4 +1,5 @@
 import { EditorSession } from "../app/EditorSession.js";
+import { INVALID_ARGUMENTS } from "../command/CommandMessages.js";
 
 import { HelpText } from "./HelpText.js";
 
@@ -29,6 +30,24 @@ export class CommandDispatcher {
 
 		if (command === "tree") {
 			return this.session.runTree();
+		}
+
+		if (command === "move") {
+			const id = tokens[1];
+			const dx = tokens.length >= 3 ? Number(tokens[2]) : Number.NaN;
+			const dy = tokens.length >= 4 ? Number(tokens[3]) : Number.NaN;
+			if (!id) {
+				return INVALID_ARGUMENTS;
+			}
+			return this.session.runMove(id, dx, dy);
+		}
+
+		if (command === "undo") {
+			return this.session.runUndo();
+		}
+
+		if (command === "redo") {
+			return this.session.runRedo();
 		}
 
 		return `error: unknown command: ${command}`;

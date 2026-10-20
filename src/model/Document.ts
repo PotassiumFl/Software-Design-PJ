@@ -23,6 +23,15 @@ export class Document {
 		this.rootShapes.push(shape);
 	}
 
+	removeShape(id: string): void {
+		const shape = this.shapesById.get(id);
+		if (!shape) {
+			throw new Error(`no such shape: ${id}`);
+		}
+		this.detachShape(shape);
+		this.unregisterShapeRecursive(shape);
+	}
+
 	addShapeToContainer(containerId: string, shape: Shape): void {
 		const container = this.shapesById.get(containerId);
 		if (!container) {
@@ -40,6 +49,44 @@ export class Document {
 			throw new Error(`id already exists: ${shape.id}`);
 		}
 		this.shapesById.set(shape.id, shape);
+	}
+
+	private detachShape(shape: Shape): void {
+		const rootIndex = this.rootShapes.indexOf(shape);
+		if (rootIndex >= 0) {
+			this.rootShapes.splice(rootIndex, 1);
+			return;
+		}
+
+		for (const root of this.rootShapes) {
+			if (root instanceof GroupShape && this.detachFromGroup(root, shape)) {
+				return;
+			}
+		}
+	}
+
+	private detachFromGroup(group: GroupShape, target: Shape): boolean {
+		if (group.getChildren().includes(target)) {
+			group.removeChild(target);
+			return true;
+		}
+
+		for (const child of group.getChildren()) {
+			if (child instanceof GroupShape && this.detachFromGroup(child, target)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private unregisterShapeRecursive(shape: Shape): void {
+		if (shape instanceof GroupShape) {
+			for (const child of [...shape.getChildren()]) {
+				this.unregisterShapeRecursive(child);
+			}
+		}
+		this.shapesById.delete(shape.id);
 	}
 }
 

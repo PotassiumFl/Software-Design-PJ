@@ -10,14 +10,18 @@ import type { Shape } from "../model/Shape.js";
 
 import { INVALID_ARGUMENTS } from "./CommandMessages.js";
 
-import type { EditorCommand } from "./EditorCommand.js";
+import type { UndoableCommand } from "./UndoableCommand.js";
 
 type Placement = {
 	shapeTokens: string[];
 	containerId?: string;
 };
 
-export class CreateShapeCommand implements EditorCommand {
+export class CreateShapeCommand implements UndoableCommand {
+	private created:
+		| { shape: Shape; type: string; containerId?: string }
+		| undefined;
+
 	constructor(
 		private readonly store: DocumentStore,
 		private readonly registry: ShapeRegistry,
@@ -162,6 +166,22 @@ export class CreateShapeCommand implements EditorCommand {
 		return this.placeShape("g", id, new GroupShape(id), containerId);
 	}
 
+	undo(): string {
+		if (!this.created) {
+			return "error: nothing to undo";
+		}
+		const { shape, type } = this.created;
+		this.store.getDocument().removeShape(shape.id);
+		return `${type}#${shape.id} removed`;
+	}
+
+	redo(): string {
+		if (!this.created) {
+			return "error: nothing to redo";
+		}
+		return this.restoreCreated();
+	}
+
 	private placeShape(
 		type: string,
 		id: string,
@@ -172,14 +192,35 @@ export class CreateShapeCommand implements EditorCommand {
 			const document = this.store.getDocument();
 			if (containerId) {
 				document.addShapeToContainer(containerId, shape);
+				this.created = { shape, type, containerId };
 				return `${type}#${id} created in g#${containerId}`;
 			}
 			document.addRootShape(shape);
+			this.created = { shape, type };
 		} catch (error) {
 			return this.shapeError(error);
 		}
 
 		return `${type}#${id} created`;
+	}
+
+	private restoreCreated(): string {
+		const created = this.created;
+		if (!created) {
+			return "error: nothing to redo";
+		}
+		const { shape, type, containerId } = created;
+		try {
+			const document = this.store.getDocument();
+			if (containerId) {
+				document.addShapeToContainer(containerId, shape);
+				return `${type}#${shape.id} created in g#${containerId}`;
+			}
+			document.addRootShape(shape);
+		} catch (error) {
+			return this.shapeError(error);
+		}
+		return `${type}#${shape.id} created`;
 	}
 
 	private shapeError(error: unknown): string {

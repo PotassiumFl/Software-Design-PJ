@@ -10,4 +10,11 @@ export class GroupShape extends Shape {
 	addChild(shape: Shape): void {
 		this.children.push(shape);
 	}
+
+	removeChild(shape: Shape): void {
+		const index = this.children.indexOf(shape);
+		if (index >= 0) {
+			this.children.splice(index, 1);
+		}
+	}
 }
