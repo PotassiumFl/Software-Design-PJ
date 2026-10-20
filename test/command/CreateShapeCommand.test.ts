@@ -6,6 +6,7 @@ import { CreateShapeCommand } from "../../src/command/CreateShapeCommand.js";
 import { Document } from "../../src/model/Document.js";
 import { DocumentStore } from "../../src/model/DocumentStore.js";
 import { ShapeRegistry } from "../../src/model/ShapeRegistry.js";
+import { TextShape } from "../../src/model/TextShape.js";
 
 function storeWithDocument(): DocumentStore {
 	const store = new DocumentStore();
@@ -136,10 +137,9 @@ describe("CreateShapeCommand builtin leaf shapes", () => {
 		]);
 
 		assert.equal(command.execute(), "text#title created");
-		assert.equal(
-			(store.getDocument().findById("title") as { content: string }).content,
-			"My Diagram",
-		);
+		const title = store.getDocument().findById("title");
+		assert.ok(title instanceof TextShape);
+		assert.equal(title.content, "My Diagram");
 	});
 
 });
