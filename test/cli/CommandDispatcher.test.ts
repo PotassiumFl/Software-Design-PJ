@@ -261,3 +261,39 @@ describe("CommandDispatcher delete set scale (E2)", () => {
 		);
 	});
 });
+
+describe("CommandDispatcher group (F1 S18)", () => {
+	it("groups root shapes like phase_cli_1 section 6", () => {
+		const session = new EditorSession();
+		const dispatcher = new CommandDispatcher(session);
+		dispatcher.dispatch(["init", "800", "600"]);
+		dispatcher.dispatch([
+			"create",
+			"circle",
+			"c1",
+			"100",
+			"100",
+			"20",
+			"red",
+		]);
+		dispatcher.dispatch([
+			"create",
+			"rect",
+			"box",
+			"200",
+			"80",
+			"60",
+			"60",
+			"#3366ff",
+		]);
+
+		assert.equal(
+			dispatcher.dispatch(["group", "markers", "c1", "box"]),
+			"g#markers created with 2 children",
+		);
+
+		const tree = dispatcher.dispatch(["tree"]);
+		assert.ok(tree?.includes("g#markers"));
+		assert.ok(tree?.includes("circle#c1"));
+	});
+});
