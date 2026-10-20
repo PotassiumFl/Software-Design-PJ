@@ -17,7 +17,12 @@ export class CommandDispatcher {
 			return HelpText.render();
 		}
 
-		// 阶段 B 起：在此分支处理 init 等；需要画布时用 this.session
+		if (command === "init") {
+			const width = tokens.length >= 2 ? Number(tokens[1]) : 800;
+			const height = tokens.length >= 3 ? Number(tokens[2]) : 600;
+			return this.session.runInit(width, height);
+		}
+
 		return `error: unknown command: ${command}`;
 	}
 }
