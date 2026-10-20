@@ -175,3 +175,46 @@ describe("CommandDispatcher hierarchy (S12–S13)", () => {
 		assert.ok(tree?.includes("├──") || tree?.includes("└──"));
 	});
 });
+
+describe("CommandDispatcher move undo redo (S15)", () => {
+	it("matches phase_cli_1 section 6 move undo redo on circle", () => {
+		const session = new EditorSession();
+		const dispatcher = new CommandDispatcher(session);
+		dispatcher.dispatch(["init", "800", "600"]);
+		dispatcher.dispatch([
+			"create",
+			"circle",
+			"c1",
+			"100",
+			"100",
+			"20",
+			"red",
+		]);
+
+		assert.equal(
+			dispatcher.dispatch(["move", "c1", "30", "0"]),
+			"circle#c1 moved to (130,100)",
+		);
+		assert.equal(
+			dispatcher.dispatch(["undo"]),
+			"circle#c1 moved back to (100,100)",
+		);
+		assert.equal(
+			dispatcher.dispatch(["redo"]),
+			"circle#c1 moved to (130,100)",
+		);
+	});
+
+	it("does not put display commands on the undo stack", () => {
+		const session = new EditorSession();
+		const dispatcher = new CommandDispatcher(session);
+		dispatcher.dispatch(["init"]);
+		dispatcher.dispatch(["create", "rect", "r1", "0", "0", "1", "1"]);
+		dispatcher.dispatch(["tree"]);
+
+		assert.equal(
+			dispatcher.dispatch(["undo"]),
+			"rect#r1 removed",
+		);
+	});
+});
