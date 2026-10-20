@@ -297,3 +297,65 @@ describe("CommandDispatcher group (F1 S18)", () => {
 		assert.ok(tree?.includes("circle#c1"));
 	});
 });
+
+describe("CommandDispatcher F2 (S19–S21)", () => {
+	it("show, front, and canvas resize", () => {
+		const session = new EditorSession();
+		const dispatcher = new CommandDispatcher(session);
+		dispatcher.dispatch(["init", "800", "600"]);
+		dispatcher.dispatch([
+			"create",
+			"rect",
+			"bg",
+			"0",
+			"0",
+			"800",
+			"600",
+			"#ffffff",
+		]);
+		dispatcher.dispatch([
+			"create",
+			"circle",
+			"c1",
+			"100",
+			"100",
+			"20",
+			"red",
+		]);
+		dispatcher.dispatch([
+			"create",
+			"rect",
+			"box",
+			"200",
+			"80",
+			"60",
+			"60",
+			"#3366ff",
+		]);
+		dispatcher.dispatch(["group", "markers", "c1", "box"]);
+
+		const show = dispatcher.dispatch(["show", "c1"]);
+		assert.equal(
+			show,
+			[
+				"circle#c1  parent=g#markers",
+				"  cx=100 cy=100 r=20",
+				"  fill=red",
+			].join("\n"),
+		);
+
+		assert.equal(
+			dispatcher.dispatch(["front", "c1"]),
+			"circle#c1 moved to front",
+		);
+
+		assert.equal(dispatcher.dispatch(["canvas"]), "canvas 800x600");
+
+		assert.equal(
+			dispatcher.dispatch(["canvas", "1024", "768"]),
+			"canvas 1024x768 resized",
+		);
+		const tree = dispatcher.dispatch(["tree"]);
+		assert.ok(tree?.startsWith("svg (1024x768)"));
+	});
+});
