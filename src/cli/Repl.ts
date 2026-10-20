@@ -37,9 +37,14 @@ export class Repl {
 					break;
 				}
 
-				const message = this.dispatcher.dispatch(tokens);
-				if (message !== null) {
-					console.log(message);
+				try {
+					const message = this.dispatcher.dispatch(tokens);
+					if (message !== null) {
+						console.log(message);
+					}
+				} catch (err) {
+					const msg = err instanceof Error ? err.message : String(err);
+					console.log(`error: ${msg}`);
 				}
 			}
 		} finally {

@@ -1,6 +1,6 @@
 import { Repl } from './Repl.js';
 
 new Repl().run().catch((err: unknown) => {
-  console.error(err);
-  process.exit(1);
+	const msg = err instanceof Error ? err.message : String(err);
+	console.log(`error: ${msg}`);
 });

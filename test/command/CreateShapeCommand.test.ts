@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { INVALID_ARGUMENTS } from "../../src/command/CommandMessages.js";
 import { CreateShapeCommand } from "../../src/command/CreateShapeCommand.js";
 import { Document } from "../../src/model/Document.js";
 import { DocumentStore } from "../../src/model/DocumentStore.js";
@@ -41,6 +42,18 @@ describe("CreateShapeCommand", () => {
 			command.execute(),
 			"error: unknown shape type: box (is the plugin loaded?)",
 		);
+	});
+
+	it("returns error for incomplete rect arguments", () => {
+		const store = storeWithDocument();
+		const command = new CreateShapeCommand(store, new ShapeRegistry(), [
+			"rect",
+			"r1",
+			"0",
+			"0",
+		]);
+
+		assert.equal(command.execute(), INVALID_ARGUMENTS);
 	});
 
 	it("returns id already exists when id is taken", () => {

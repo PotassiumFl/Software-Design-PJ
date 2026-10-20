@@ -23,6 +23,14 @@ export class CommandDispatcher {
 			return this.session.runInit(width, height);
 		}
 
+		if (command === "create") {
+			return this.session.runCreate(tokens.slice(1));
+		}
+
+		if (command === "tree") {
+			return this.session.runTree();
+		}
+
 		return `error: unknown command: ${command}`;
 	}
 }
