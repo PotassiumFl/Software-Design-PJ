@@ -218,3 +218,46 @@ describe("CommandDispatcher move undo redo (S15)", () => {
 		);
 	});
 });
+
+describe("CommandDispatcher delete set scale (E2)", () => {
+	it("sets text content after create", () => {
+		const session = new EditorSession();
+		const dispatcher = new CommandDispatcher(session);
+		dispatcher.dispatch(["init"]);
+		dispatcher.dispatch([
+			"create",
+			"text",
+			"title",
+			"20",
+			"40",
+			"My Diagram",
+		]);
+
+		assert.equal(
+			dispatcher.dispatch(["set", "title", "text", "My Diagram v2"]),
+			'text#title updated: text="My Diagram v2"',
+		);
+	});
+
+	it("deletes a root shape", () => {
+		const session = new EditorSession();
+		const dispatcher = new CommandDispatcher(session);
+		dispatcher.dispatch(["init"]);
+		dispatcher.dispatch(["create", "rect", "r1", "0", "0", "10", "10"]);
+
+		assert.equal(dispatcher.dispatch(["delete", "r1"]), "rect#r1 deleted");
+		assert.equal(dispatcher.dispatch(["undo"]), "rect#r1 restored");
+	});
+
+	it("rejects non-positive scale factor", () => {
+		const session = new EditorSession();
+		const dispatcher = new CommandDispatcher(session);
+		dispatcher.dispatch(["init"]);
+		dispatcher.dispatch(["create", "rect", "box", "200", "80", "60", "60"]);
+
+		assert.equal(
+			dispatcher.dispatch(["scale", "box", "0"]),
+			"error: scale factor must be positive",
+		);
+	});
+});
