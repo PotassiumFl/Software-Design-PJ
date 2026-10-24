@@ -1,14 +1,12 @@
 import { DocumentStore } from "../model/DocumentStore.js";
-import { GroupShape } from "../model/GroupShape.js";
 import type { Shape } from "../model/Shape.js";
-import { shapeTypeLabel } from "../model/ShapeTransform.js";
 
 import type { UndoableCommand } from "./UndoableCommand.js";
 
 export class AddToCommand implements UndoableCommand {
 	private previousPlacement:
 		| {
-				parent: GroupShape | null;
+				parent: Shape | null;
 				index: number;
 		  }
 		| undefined;
@@ -30,7 +28,7 @@ export class AddToCommand implements UndoableCommand {
 		if (!container) {
 			return `error: no such container: ${this.containerId}`;
 		}
-		if (!(container instanceof GroupShape)) {
+		if (!container.isComposite()) {
 			return `error: not a container: ${this.containerId}`;
 		}
 
@@ -41,7 +39,7 @@ export class AddToCommand implements UndoableCommand {
 		};
 
 		document.reparentExistingShapeToContainer(this.containerId, shape);
-		const type = shapeTypeLabel(shape);
+		const type = shape.typeLabel();
 		return `${type}#${this.shapeId} added to g#${this.containerId}`;
 	}
 
@@ -55,7 +53,7 @@ export class AddToCommand implements UndoableCommand {
 		const { parent, index } = this.previousPlacement;
 		document.reinsertShapeAt(shape, parent, index);
 
-		const type = shapeTypeLabel(shape);
+		const type = shape.typeLabel();
 		return `${type}#${this.shapeId} removed from g#${this.containerId}`;
 	}
 

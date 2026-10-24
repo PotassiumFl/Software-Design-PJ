@@ -1,5 +1,4 @@
 import { DocumentStore } from "../model/DocumentStore.js";
-import { scaleShape, shapeTypeLabel } from "../model/ShapeTransform.js";
 
 import { INVALID_ARGUMENTS } from "./CommandMessages.js";
 
@@ -27,10 +26,10 @@ export class ScaleShapeCommand implements UndoableCommand {
 			return `error: no such shape: ${this.shapeId}`;
 		}
 
-		scaleShape(shape, this.factor);
+		shape.scale(this.factor);
 		this.scaled = true;
 
-		const type = shapeTypeLabel(shape);
+		const type = shape.typeLabel();
 		return `${type}#${this.shapeId} scaled by ${this.factor}`;
 	}
 
@@ -43,8 +42,8 @@ export class ScaleShapeCommand implements UndoableCommand {
 			return `error: no such shape: ${this.shapeId}`;
 		}
 
-		scaleShape(shape, 1 / this.factor);
-		const type = shapeTypeLabel(shape);
+		shape.scale(1 / this.factor);
+		const type = shape.typeLabel();
 		return `${type}#${this.shapeId} scaled by ${1 / this.factor}`;
 	}
 
@@ -53,8 +52,8 @@ export class ScaleShapeCommand implements UndoableCommand {
 		if (!shape) {
 			return `error: no such shape: ${this.shapeId}`;
 		}
-		scaleShape(shape, this.factor);
-		const type = shapeTypeLabel(shape);
+		shape.scale(this.factor);
+		const type = shape.typeLabel();
 		return `${type}#${this.shapeId} scaled by ${this.factor}`;
 	}
 }

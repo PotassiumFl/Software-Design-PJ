@@ -1,6 +1,4 @@
 import { DocumentStore } from "../model/DocumentStore.js";
-import { GroupShape } from "../model/GroupShape.js";
-import { shapeTypeLabel } from "../model/ShapeTransform.js";
 
 import type { UndoableCommand } from "./UndoableCommand.js";
 
@@ -27,11 +25,11 @@ export class ZOrderCommand implements UndoableCommand {
 
 		if (this.direction === "front") {
 			document.moveShapeToFront(this.shapeId);
-			return `${shapeTypeLabel(shape)}#${this.shapeId} moved to front`;
+			return `${shape.typeLabel()}#${this.shapeId} moved to front`;
 		}
 
 		document.moveShapeToBack(this.shapeId);
-		return `${shapeTypeLabel(shape)}#${this.shapeId} moved to back`;
+		return `${shape.typeLabel()}#${this.shapeId} moved to back`;
 	}
 
 	undo(): string {
@@ -41,9 +39,9 @@ export class ZOrderCommand implements UndoableCommand {
 		document.reinsertShapeAt(shape, parent, this.previousIndex!);
 
 		if (this.direction === "front") {
-			return `${shapeTypeLabel(shape)}#${this.shapeId} moved to back`;
+			return `${shape.typeLabel()}#${this.shapeId} moved to back`;
 		}
-		return `${shapeTypeLabel(shape)}#${this.shapeId} moved to front`;
+		return `${shape.typeLabel()}#${this.shapeId} moved to front`;
 	}
 
 	redo(): string {

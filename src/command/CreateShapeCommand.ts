@@ -1,9 +1,3 @@
-import { CircleShape } from "../model/CircleShape.js";
-import { EllipseShape } from "../model/EllipseShape.js";
-import { GroupShape } from "../model/GroupShape.js";
-import { LineShape } from "../model/LineShape.js";
-import { RectShape } from "../model/RectShape.js";
-import { TextShape } from "../model/TextShape.js";
 import { DocumentStore } from "../model/DocumentStore.js";
 import { ShapeRegistry } from "../model/ShapeRegistry.js";
 import type { Shape } from "../model/Shape.js";
@@ -38,22 +32,13 @@ export class CreateShapeCommand implements UndoableCommand {
 			return this.registry.unknownTypeMessage(type);
 		}
 
-		switch (type) {
-			case "rect":
-				return this.createRect();
-			case "circle":
-				return this.createCircle();
-			case "ellipse":
-				return this.createEllipse();
-			case "line":
-				return this.createLine();
-			case "text":
-				return this.createText();
-			case "g":
-				return this.createGroup();
-			default:
-				return this.registry.unknownTypeMessage(type);
+		const { shapeTokens, containerId } = this.parsePlacement(this.tokens);
+		const built = this.registry.createFromCliTokens(type, shapeTokens);
+		if (built.error === "invalid_arguments" || !built.shape) {
+			return INVALID_ARGUMENTS;
 		}
+
+		return this.placeShape(type, built.shape.id, built.shape, containerId);
 	}
 
 	private parsePlacement(tokens: string[]): Placement {
@@ -65,105 +50,6 @@ export class CreateShapeCommand implements UndoableCommand {
 			shapeTokens: tokens.slice(0, inIndex),
 			containerId: tokens[inIndex + 1],
 		};
-	}
-
-	private createRect(): string {
-		const { shapeTokens, containerId } = this.parsePlacement(this.tokens);
-		const [, id, xStr, yStr, wStr, hStr, fill] = shapeTokens;
-		if (!id || xStr === undefined || yStr === undefined || wStr === undefined || hStr === undefined) {
-			return INVALID_ARGUMENTS;
-		}
-
-		return this.placeShape(
-			"rect",
-			id,
-			new RectShape(id, Number(xStr), Number(yStr), Number(wStr), Number(hStr), fill),
-			containerId,
-		);
-	}
-
-	private createCircle(): string {
-		const { shapeTokens, containerId } = this.parsePlacement(this.tokens);
-		const [, id, cxStr, cyStr, rStr, fill] = shapeTokens;
-		if (!id || cxStr === undefined || cyStr === undefined || rStr === undefined) {
-			return INVALID_ARGUMENTS;
-		}
-
-		return this.placeShape(
-			"circle",
-			id,
-			new CircleShape(id, Number(cxStr), Number(cyStr), Number(rStr), fill),
-			containerId,
-		);
-	}
-
-	private createEllipse(): string {
-		const { shapeTokens, containerId } = this.parsePlacement(this.tokens);
-		const [, id, cxStr, cyStr, rxStr, ryStr, fill] = shapeTokens;
-		if (!id || cxStr === undefined || cyStr === undefined || rxStr === undefined || ryStr === undefined) {
-			return INVALID_ARGUMENTS;
-		}
-
-		return this.placeShape(
-			"ellipse",
-			id,
-			new EllipseShape(
-				id,
-				Number(cxStr),
-				Number(cyStr),
-				Number(rxStr),
-				Number(ryStr),
-				fill,
-			),
-			containerId,
-		);
-	}
-
-	private createLine(): string {
-		const { shapeTokens, containerId } = this.parsePlacement(this.tokens);
-		const [, id, x1Str, y1Str, x2Str, y2Str, stroke] = shapeTokens;
-		if (!id || x1Str === undefined || y1Str === undefined || x2Str === undefined || y2Str === undefined) {
-			return INVALID_ARGUMENTS;
-		}
-
-		return this.placeShape(
-			"line",
-			id,
-			new LineShape(
-				id,
-				Number(x1Str),
-				Number(y1Str),
-				Number(x2Str),
-				Number(y2Str),
-				stroke,
-			),
-			containerId,
-		);
-	}
-
-	private createText(): string {
-		const { shapeTokens, containerId } = this.parsePlacement(this.tokens);
-		const [, id, xStr, yStr, content] = shapeTokens;
-		if (!id || xStr === undefined || yStr === undefined || content === undefined) {
-			return INVALID_ARGUMENTS;
-		}
-
-		return this.placeShape(
-			"text",
-			id,
-			new TextShape(id, Number(xStr), Number(yStr), content),
-			containerId,
-		);
-	}
-
-	private createGroup(): string {
-		const { shapeTokens, containerId } = this.parsePlacement(this.tokens);
-		const [, id] = shapeTokens;
-		if (!id) {
-			return INVALID_ARGUMENTS;
-		}
-
-		return this.placeShape("g", id, new GroupShape(id), containerId);
 	}
 
 	undo(): string {

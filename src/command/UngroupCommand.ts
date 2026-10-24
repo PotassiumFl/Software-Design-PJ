@@ -7,7 +7,7 @@ import type { UndoableCommand } from "./UndoableCommand.js";
 export class UngroupCommand implements UndoableCommand {
 	private undoState:
 		| {
-				parent: GroupShape | null;
+				parent: Shape | null;
 				index: number;
 				children: Shape[];
 		  }
@@ -25,7 +25,7 @@ export class UngroupCommand implements UndoableCommand {
 			return `error: no such shape: ${this.groupId}`;
 		}
 
-		if (!(group instanceof GroupShape)) {
+		if (!group.isComposite()) {
 			return `error: not a container: ${this.groupId}`;
 		}
 
@@ -35,7 +35,7 @@ export class UngroupCommand implements UndoableCommand {
 				group,
 				document.findParentContainer(group),
 			),
-			children: [...group.getChildren()],
+			children: [...group.getChildShapes()],
 		};
 
 		try {

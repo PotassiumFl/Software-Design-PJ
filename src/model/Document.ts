@@ -1,18 +1,27 @@
-import { GroupShape } from "./GroupShape.js";
 import type { Shape } from "./Shape.js";
 
 export class Document {
 	private readonly rootShapes: Shape[] = [];
 	private readonly shapesById = new Map<string, Shape>();
+	private _width: number;
+	private _height: number;
 
-	constructor(
-		public width: number,
-		public height: number,
-	) {}
+	constructor(width: number, height: number) {
+		this._width = width;
+		this._height = height;
+	}
+
+	get width(): number {
+		return this._width;
+	}
+
+	get height(): number {
+		return this._height;
+	}
 
 	resizeCanvas(width: number, height: number): void {
-		this.width = width;
-		this.height = height;
+		this._width = width;
+		this._height = height;
 	}
 
 	moveShapeToFront(shapeId: string): number {
@@ -47,11 +56,7 @@ export class Document {
 		return previousIndex;
 	}
 
-	reinsertShapeAt(
-		shape: Shape,
-		parent: GroupShape | null,
-		index: number,
-	): void {
+	reinsertShapeAt(shape: Shape, parent: Shape | null, index: number): void {
 		this.detachShape(shape);
 		if (parent === null) {
 			this.rootShapes.splice(index, 0, shape);
@@ -60,11 +65,7 @@ export class Document {
 		parent.insertChildAt(index, shape);
 	}
 
-	insertNewGroupAt(
-		parent: GroupShape | null,
-		index: number,
-		group: GroupShape,
-	): void {
+	insertNewGroupAt(parent: Shape | null, index: number, group: Shape): void {
 		this.registerShape(group);
 		if (parent === null) {
 			this.rootShapes.splice(index, 0, group);
@@ -75,10 +76,10 @@ export class Document {
 
 	removeGroupContainer(groupId: string): void {
 		const group = this.shapesById.get(groupId);
-		if (!(group instanceof GroupShape)) {
+		if (!group || !group.isComposite()) {
 			throw new Error(`no such shape: ${groupId}`);
 		}
-		if (group.getChildren().length > 0) {
+		if (group.getChildShapes().length > 0) {
 			throw new Error(`not empty: ${groupId}`);
 		}
 		this.detachShape(group);
@@ -87,6 +88,20 @@ export class Document {
 
 	getRootShapes(): readonly Shape[] {
 		return this.rootShapes;
+	}
+
+	countElements(): number {
+		let count = 0;
+		const visit = (shape: Shape): void => {
+			count += 1;
+			for (const child of shape.getChildShapes()) {
+				visit(child);
+			}
+		};
+		for (const root of this.rootShapes) {
+			visit(root);
+		}
+		return count;
 	}
 
 	findById(id: string): Shape | undefined {
@@ -107,12 +122,12 @@ export class Document {
 		this.unregisterShapeRecursive(shape);
 	}
 
-	findParentContainer(shape: Shape): GroupShape | null {
+	findParentContainer(shape: Shape): Shape | null {
 		for (const root of this.rootShapes) {
 			if (root === shape) {
 				return null;
 			}
-			if (root instanceof GroupShape) {
+			if (root.isComposite()) {
 				const parent = this.findParentInGroup(root, shape);
 				if (parent !== undefined) {
 					return parent;
@@ -122,16 +137,16 @@ export class Document {
 		throw new Error(`no such shape: ${shape.id}`);
 	}
 
-	getShapeIndexInParent(shape: Shape, parent: GroupShape | null): number {
+	getShapeIndexInParent(shape: Shape, parent: Shape | null): number {
 		if (parent === null) {
 			return this.rootShapes.indexOf(shape);
 		}
-		return parent.getChildren().indexOf(shape);
+		return parent.indexOfChild(shape);
 	}
 
 	restoreDeletedShape(
 		shape: Shape,
-		parent: GroupShape | null,
+		parent: Shape | null,
 		index: number,
 	): void {
 		this.registerShapeTree(shape);
@@ -143,13 +158,7 @@ export class Document {
 	}
 
 	addShapeToContainer(containerId: string, shape: Shape): void {
-		const container = this.shapesById.get(containerId);
-		if (!container) {
-			throw new Error(`no such container: ${containerId}`);
-		}
-		if (!(container instanceof GroupShape)) {
-			throw new Error(`not a container: ${containerId}`);
-		}
+		const container = this.requireContainer(containerId);
 		this.registerShape(shape);
 		container.addChild(shape);
 	}
@@ -165,23 +174,14 @@ export class Document {
 
 	isDescendantOf(ancestorId: string, descendantId: string): boolean {
 		const ancestor = this.shapesById.get(ancestorId);
-		if (!(ancestor instanceof GroupShape)) {
+		if (!ancestor || !ancestor.isComposite()) {
 			return false;
 		}
 		return this.containsShapeId(ancestor, descendantId);
 	}
 
-	reparentExistingShapeToContainer(
-		containerId: string,
-		shape: Shape,
-	): void {
-		const container = this.shapesById.get(containerId);
-		if (!container) {
-			throw new Error(`no such container: ${containerId}`);
-		}
-		if (!(container instanceof GroupShape)) {
-			throw new Error(`not a container: ${containerId}`);
-		}
+	reparentExistingShapeToContainer(containerId: string, shape: Shape): void {
+		const container = this.requireContainer(containerId);
 		this.detachShape(shape);
 		container.addChild(shape);
 	}
@@ -191,7 +191,7 @@ export class Document {
 		if (!group) {
 			throw new Error(`no such shape: ${groupId}`);
 		}
-		if (!(group instanceof GroupShape)) {
+		if (!group.isComposite()) {
 			throw new Error(`not a container: ${groupId}`);
 		}
 
@@ -200,14 +200,25 @@ export class Document {
 			throw new Error(`cannot ungroup top-level container: ${groupId}`);
 		}
 
-		const index = parent.getChildren().indexOf(group);
-		const children = [...group.getChildren()];
+		const index = parent.indexOfChild(group);
+		const children = [...group.getChildShapes()];
 		parent.removeChild(group);
 		for (let i = 0; i < children.length; i++) {
 			parent.insertChildAt(index + i, children[i]!);
 		}
 		this.shapesById.delete(group.id);
 		return children.length;
+	}
+
+	private requireContainer(containerId: string): Shape {
+		const container = this.shapesById.get(containerId);
+		if (!container) {
+			throw new Error(`no such container: ${containerId}`);
+		}
+		if (!container.isComposite()) {
+			throw new Error(`not a container: ${containerId}`);
+		}
+		return container;
 	}
 
 	private registerShape(shape: Shape): void {
@@ -219,10 +230,8 @@ export class Document {
 
 	private registerShapeTree(shape: Shape): void {
 		this.registerShape(shape);
-		if (shape instanceof GroupShape) {
-			for (const child of shape.getChildren()) {
-				this.registerShapeTree(child);
-			}
+		for (const child of shape.getChildShapes()) {
+			this.registerShapeTree(child);
 		}
 	}
 
@@ -234,20 +243,20 @@ export class Document {
 		}
 
 		for (const root of this.rootShapes) {
-			if (root instanceof GroupShape && this.detachFromGroup(root, shape)) {
+			if (root.isComposite() && this.detachFromGroup(root, shape)) {
 				return;
 			}
 		}
 	}
 
-	private detachFromGroup(group: GroupShape, target: Shape): boolean {
-		if (group.getChildren().includes(target)) {
+	private detachFromGroup(group: Shape, target: Shape): boolean {
+		if (group.getChildShapes().includes(target)) {
 			group.removeChild(target);
 			return true;
 		}
 
-		for (const child of group.getChildren()) {
-			if (child instanceof GroupShape && this.detachFromGroup(child, target)) {
+		for (const child of group.getChildShapes()) {
+			if (child.isComposite() && this.detachFromGroup(child, target)) {
 				return true;
 			}
 		}
@@ -255,12 +264,12 @@ export class Document {
 		return false;
 	}
 
-	private containsShapeId(group: GroupShape, shapeId: string): boolean {
-		for (const child of group.getChildren()) {
+	private containsShapeId(group: Shape, shapeId: string): boolean {
+		for (const child of group.getChildShapes()) {
 			if (child.id === shapeId) {
 				return true;
 			}
-			if (child instanceof GroupShape && this.containsShapeId(child, shapeId)) {
+			if (child.isComposite() && this.containsShapeId(child, shapeId)) {
 				return true;
 			}
 		}
@@ -268,14 +277,14 @@ export class Document {
 	}
 
 	private findParentInGroup(
-		group: GroupShape,
+		group: Shape,
 		target: Shape,
-	): GroupShape | null | undefined {
-		if (group.getChildren().includes(target)) {
+	): Shape | null | undefined {
+		if (group.getChildShapes().includes(target)) {
 			return group;
 		}
-		for (const child of group.getChildren()) {
-			if (child instanceof GroupShape) {
+		for (const child of group.getChildShapes()) {
+			if (child.isComposite()) {
 				const parent = this.findParentInGroup(child, target);
 				if (parent !== undefined) {
 					return parent;
@@ -286,12 +295,9 @@ export class Document {
 	}
 
 	private unregisterShapeRecursive(shape: Shape): void {
-		if (shape instanceof GroupShape) {
-			for (const child of [...shape.getChildren()]) {
-				this.unregisterShapeRecursive(child);
-			}
+		for (const child of [...shape.getChildShapes()]) {
+			this.unregisterShapeRecursive(child);
 		}
 		this.shapesById.delete(shape.id);
 	}
 }
-

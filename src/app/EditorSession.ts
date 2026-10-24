@@ -16,7 +16,6 @@ import {
 	NO_SAVE_PATH,
 	UNDO_NOT_ALLOWED_AFTER_IO,
 } from "../command/CommandMessages.js";
-import { countDocumentElements } from "../io/documentShapeCount.js";
 import { SvgReader } from "../io/SvgReader.js";
 import { SvgWriter } from "../io/SvgWriter.js";
 import { DocumentStore } from "../model/DocumentStore.js";
@@ -233,7 +232,7 @@ export class EditorSession {
 
 		this.lastSavePath = targetPath;
 		this.markIoCommand(false);
-		const count = countDocumentElements(this.documentStore.getDocument());
+		const count = this.documentStore.getDocument().countElements();
 		return `saved to ${baseName} (${count} elements)`;
 	}
 

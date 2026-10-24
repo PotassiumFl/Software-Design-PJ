@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { SetAttributeCommand } from "../../src/command/SetAttributeCommand.js";
+import { ShowFormatter } from "../../src/cli/ShowFormatter.js";
+import { SvgWriter } from "../../src/io/SvgWriter.js";
 import { CircleShape } from "../../src/model/CircleShape.js";
 import { Document } from "../../src/model/Document.js";
 import { DocumentStore } from "../../src/model/DocumentStore.js";
@@ -97,6 +99,51 @@ describe("SetAttributeCommand", () => {
 
 		assert.equal(command.execute(), "text#title updated: x=30");
 		assert.equal((store.getDocument().findById("title") as TextShape).x, 30);
+	});
+
+	it("sets fill, stroke, and stroke-width on every leaf and keeps them visible", () => {
+		const store = new DocumentStore();
+		const doc = new Document(800, 600);
+		doc.addRootShape(new RectShape("r1", 0, 0, 10, 10));
+		doc.addRootShape(new TextShape("t1", 1, 2, "hi"));
+		doc.addRootShape(new LineShape("ln", 0, 0, 1, 1, "black"));
+		store.setDocument(doc);
+
+		assert.equal(
+			new SetAttributeCommand(store, "r1", "stroke", "black").execute(),
+			"rect#r1 updated: stroke=black",
+		);
+		assert.equal(
+			new SetAttributeCommand(store, "r1", "stroke-width", "2").execute(),
+			"rect#r1 updated: stroke-width=2",
+		);
+		assert.equal(
+			new SetAttributeCommand(store, "t1", "fill", "red").execute(),
+			"text#t1 updated: fill=red",
+		);
+		assert.equal(
+			new SetAttributeCommand(store, "ln", "fill", "blue").execute(),
+			"line#ln updated: fill=blue",
+		);
+		assert.equal(
+			new SetAttributeCommand(store, "ln", "stroke-width", "3").execute(),
+			"line#ln updated: stroke-width=3",
+		);
+
+		const shown = ShowFormatter.render(doc, "r1");
+		assert.match(shown, /stroke=black/);
+		assert.match(shown, /stroke-width=2/);
+
+		const svg = SvgWriter.serialize(doc);
+		assert.match(
+			svg,
+			/<rect id="r1" x="0" y="0" width="10" height="10" stroke="black" stroke-width="2"\/>/,
+		);
+		assert.match(svg, /<text id="t1" x="1" y="2" fill="red">hi<\/text>/);
+		assert.match(
+			svg,
+			/<line id="ln" x1="0" y1="0" x2="1" y2="1" fill="blue" stroke="black" stroke-width="3"\/>/,
+		);
 	});
 
 	it("rejects attributes outside the whitelist", () => {

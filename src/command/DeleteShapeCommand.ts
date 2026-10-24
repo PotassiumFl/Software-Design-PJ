@@ -1,7 +1,5 @@
 import { DocumentStore } from "../model/DocumentStore.js";
-import { GroupShape } from "../model/GroupShape.js";
 import type { Shape } from "../model/Shape.js";
-import { shapeTypeLabel } from "../model/ShapeTransform.js";
 
 import type { UndoableCommand } from "./UndoableCommand.js";
 
@@ -9,7 +7,7 @@ export class DeleteShapeCommand implements UndoableCommand {
 	private deleted:
 		| {
 				shape: Shape;
-				parent: GroupShape | null;
+				parent: Shape | null;
 				index: number;
 				type: string;
 		  }
@@ -27,7 +25,7 @@ export class DeleteShapeCommand implements UndoableCommand {
 			return `error: no such shape: ${this.shapeId}`;
 		}
 
-		const type = shapeTypeLabel(shape);
+		const type = shape.typeLabel();
 		const parent = document.findParentContainer(shape);
 		const index = document.getShapeIndexInParent(shape, parent);
 		document.removeShape(this.shapeId);

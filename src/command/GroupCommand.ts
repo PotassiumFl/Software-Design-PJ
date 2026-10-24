@@ -6,7 +6,7 @@ import type { UndoableCommand } from "./UndoableCommand.js";
 
 type MemberSnapshot = {
 	shape: Shape;
-	parent: GroupShape | null;
+	parent: Shape | null;
 	index: number;
 };
 
@@ -82,11 +82,11 @@ export class GroupCommand implements UndoableCommand {
 
 		const document = this.store.getDocument();
 		const group = document.findById(this.newGroupId);
-		if (!(group instanceof GroupShape)) {
+		if (!group?.isComposite()) {
 			return "error: nothing to undo";
 		}
 
-		for (const child of [...group.getChildren()]) {
+		for (const child of [...group.getChildShapes()]) {
 			group.removeChild(child);
 		}
 		document.removeGroupContainer(this.newGroupId);

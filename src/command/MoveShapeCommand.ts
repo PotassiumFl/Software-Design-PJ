@@ -1,9 +1,4 @@
-import { CircleShape } from "../model/CircleShape.js";
 import { DocumentStore } from "../model/DocumentStore.js";
-import { GroupShape } from "../model/GroupShape.js";
-import { RectShape } from "../model/RectShape.js";
-import { shapeTypeLabel, translateShape } from "../model/ShapeTransform.js";
-import type { Shape } from "../model/Shape.js";
 
 import { INVALID_ARGUMENTS } from "./CommandMessages.js";
 
@@ -39,30 +34,20 @@ export class MoveShapeCommand implements UndoableCommand {
 			return `error: no such shape: ${this.shapeId}`;
 		}
 
-		if (shape instanceof GroupShape) {
-			translateShape(shape, dx, dy);
+		shape.translate(dx, dy);
+
+		if (shape.isComposite()) {
 			if (direction === "forward") {
 				return `g#${this.shapeId} moved by (${this.dx},${this.dy})`;
 			}
 			return `g#${this.shapeId} moved back by (${-this.dx},${-this.dy})`;
 		}
 
-		translateShape(shape, dx, dy);
-		const type = shapeTypeLabel(shape);
-		const position = MoveShapeCommand.formatPosition(shape);
+		const type = shape.typeLabel();
+		const position = shape.movePositionLabel();
 		if (direction === "forward") {
 			return `${type}#${this.shapeId} moved to ${position}`;
 		}
 		return `${type}#${this.shapeId} moved back to ${position}`;
-	}
-
-	private static formatPosition(shape: Shape): string {
-		if (shape instanceof CircleShape) {
-			return `(${shape.cx},${shape.cy})`;
-		}
-		if (shape instanceof RectShape) {
-			return `(${shape.x},${shape.y})`;
-		}
-		return `(0,0)`;
 	}
 }

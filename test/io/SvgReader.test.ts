@@ -65,4 +65,37 @@ describe("SvgReader", () => {
 		assert.ok(doc.findById("edge"));
 		assert.ok(doc.findById("end") instanceof RectShape);
 	});
+
+	it("keeps nested groups and their children in document order", () => {
+		const raw = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <g id="flowchart">
+    <g id="node1">
+      <rect id="start" x="120" y="100" width="160" height="60" fill="#4a90d9"/>
+      <text id="start-label" x="155" y="135">开始</text>
+    </g>
+    <line id="arrow1" x1="280" y1="130" x2="520" y2="130" stroke="black"/>
+  </g>
+</svg>`;
+		const result = SvgReader.parseSvg(raw);
+		const doc = result.document!;
+
+		assert.equal(result.error, undefined);
+		assert.equal(result.elementCount, 5);
+		assert.deepEqual(
+			doc.getRootShapes().map((shape) => shape.id),
+			["flowchart"],
+		);
+		const flowchart = doc.findById("flowchart") as GroupShape;
+		assert.deepEqual(
+			flowchart.getChildren().map((shape) => shape.id),
+			["node1", "arrow1"],
+		);
+		const node1 = doc.findById("node1") as GroupShape;
+		assert.deepEqual(
+			node1.getChildren().map((shape) => shape.id),
+			["start", "start-label"],
+		);
+		assert.equal((doc.findById("start") as RectShape).fill, "#4a90d9");
+	});
 });

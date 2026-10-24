@@ -3,23 +3,14 @@ import path from "node:path";
 
 import { XMLParser } from "fast-xml-parser";
 
-import { CircleShape } from "../model/CircleShape.js";
 import { Document } from "../model/Document.js";
-import { EllipseShape } from "../model/EllipseShape.js";
-import { GroupShape } from "../model/GroupShape.js";
-import { LineShape } from "../model/LineShape.js";
-import { RectShape } from "../model/RectShape.js";
 import type { Shape } from "../model/Shape.js";
-import { TextShape } from "../model/TextShape.js";
-
-import { countDocumentElements } from "./documentShapeCount.js";
 import {
-	extractDirectChildSnippets,
-	extractSvgInnerContent,
-	innerContentFromGroupSnippet,
-	parseSnippetAttributes,
-	tagNameFromSnippet,
-} from "./svgSnippetParser.js";
+	type SvgAttributeReader,
+	ShapeRegistry,
+} from "../model/ShapeRegistry.js";
+
+import { SvgSnippetParser } from "./SvgSnippetParser.js";
 
 export type SvgReadResult = {
 	document?: Document;
@@ -31,6 +22,8 @@ export type SvgReadResult = {
 type ParsedNode = Record<string, unknown>;
 
 export class SvgReader {
+	private static readonly registry = new ShapeRegistry();
+
 	static readFile(filePath: string): SvgReadResult {
 		const baseName = path.basename(filePath);
 		let raw: string;
@@ -74,7 +67,7 @@ export class SvgReader {
 
 		SvgReader.loadOrderedChildren(
 			document,
-			extractSvgInnerContent(raw),
+			SvgSnippetParser.extractSvgInnerContent(raw),
 			warnings,
 			idCounters,
 		);
@@ -82,7 +75,7 @@ export class SvgReader {
 		return {
 			document,
 			warnings,
-			elementCount: countDocumentElements(document),
+			elementCount: document.countElements(),
 		};
 	}
 
@@ -92,74 +85,47 @@ export class SvgReader {
 		warnings: string[],
 		idCounters: Map<string, number>,
 	): void {
-		for (const snippet of extractDirectChildSnippets(content)) {
-			const tag = tagNameFromSnippet(snippet);
-			if (!tag) {
-				continue;
-			}
-			const node = parseSnippetAttributes(snippet);
-			if (tag === "text" && snippet.includes(">")) {
-				const textMatch = snippet.match(/>([^<]*)<\//);
-				if (textMatch) {
-					node["#text"] = textMatch[1];
-				}
-			}
-			const shape = SvgReader.parseElement(tag, node, warnings, idCounters);
+		for (const snippet of SvgSnippetParser.extractDirectChildSnippets(content)) {
+			const shape = SvgReader.parseSnippet(snippet, warnings, idCounters);
 			if (!shape) {
 				continue;
-			}
-			if (shape instanceof GroupShape) {
-				SvgReader.loadOrderedGroupChildren(
-					shape,
-					innerContentFromGroupSnippet(snippet),
-					warnings,
-					idCounters,
-				);
 			}
 			document.addRootShape(shape);
 		}
 	}
 
 	private static loadOrderedGroupChildren(
-		group: GroupShape,
+		group: Shape,
 		content: string,
 		warnings: string[],
 		idCounters: Map<string, number>,
 	): void {
-		for (const snippet of extractDirectChildSnippets(content)) {
-			const tag = tagNameFromSnippet(snippet);
-			if (!tag) {
-				continue;
-			}
-			const node = parseSnippetAttributes(snippet);
-			if (tag === "text" && snippet.includes(">")) {
-				const textMatch = snippet.match(/>([^<]*)<\//);
-				if (textMatch) {
-					node["#text"] = textMatch[1];
-				}
-			}
-			const shape = SvgReader.parseElement(tag, node, warnings, idCounters);
+		for (const snippet of SvgSnippetParser.extractDirectChildSnippets(content)) {
+			const shape = SvgReader.parseSnippet(snippet, warnings, idCounters);
 			if (!shape) {
 				continue;
-			}
-			if (shape instanceof GroupShape) {
-				SvgReader.loadOrderedGroupChildren(
-					shape,
-					innerContentFromGroupSnippet(snippet),
-					warnings,
-					idCounters,
-				);
 			}
 			group.addChild(shape);
 		}
 	}
 
-	private static parseElement(
-		tag: string,
-		node: ParsedNode,
+	private static parseSnippet(
+		snippet: string,
 		warnings: string[],
 		idCounters: Map<string, number>,
 	): Shape | null {
+		const tag = SvgSnippetParser.tagNameFromSnippet(snippet);
+		if (!tag) {
+			return null;
+		}
+		const node = SvgSnippetParser.parseSnippetAttributes(snippet);
+		if (tag === "text" && snippet.includes(">")) {
+			const textMatch = snippet.match(/>([^<]*)<\//);
+			if (textMatch) {
+				node["#text"] = textMatch[1];
+			}
+		}
+
 		let id = SvgReader.stringAttr(node, "id");
 		if (!id) {
 			const next = (idCounters.get(tag) ?? 0) + 1;
@@ -170,68 +136,32 @@ export class SvgReader {
 			);
 		}
 
-		if (tag === "rect") {
-			return new RectShape(
-				id,
-				SvgReader.numberAttr(node, "x", 0),
-				SvgReader.numberAttr(node, "y", 0),
-				SvgReader.numberAttr(node, "width", 0),
-				SvgReader.numberAttr(node, "height", 0),
-				SvgReader.optionalStringAttr(node, "fill"),
-			);
-		}
-
-		if (tag === "circle") {
-			return new CircleShape(
-				id,
-				SvgReader.numberAttr(node, "cx", 0),
-				SvgReader.numberAttr(node, "cy", 0),
-				SvgReader.numberAttr(node, "r", 0),
-				SvgReader.optionalStringAttr(node, "fill"),
-			);
-		}
-
-		if (tag === "ellipse") {
-			return new EllipseShape(
-				id,
-				SvgReader.numberAttr(node, "cx", 0),
-				SvgReader.numberAttr(node, "cy", 0),
-				SvgReader.numberAttr(node, "rx", 0),
-				SvgReader.numberAttr(node, "ry", 0),
-				SvgReader.optionalStringAttr(node, "fill"),
-			);
-		}
-
-		if (tag === "line") {
-			return new LineShape(
-				id,
-				SvgReader.numberAttr(node, "x1", 0),
-				SvgReader.numberAttr(node, "y1", 0),
-				SvgReader.numberAttr(node, "x2", 0),
-				SvgReader.numberAttr(node, "y2", 0),
-				SvgReader.optionalStringAttr(node, "stroke"),
-				SvgReader.optionalNumberAttr(node, "stroke-width"),
-			);
-		}
-
-		if (tag === "text") {
-			const content =
+		const attrs: SvgAttributeReader = {
+			number: (name, defaultValue) =>
+				SvgReader.numberAttr(node, name, defaultValue),
+			optionalString: (name) => SvgReader.optionalStringAttr(node, name),
+			optionalNumber: (name) => SvgReader.optionalNumberAttr(node, name),
+			textContent: () =>
 				typeof node["#text"] === "string"
 					? node["#text"]
-					: String(node["#text"] ?? "");
-			return new TextShape(
-				id,
-				SvgReader.numberAttr(node, "x", 0),
-				SvgReader.numberAttr(node, "y", 0),
-				content,
+					: String(node["#text"] ?? ""),
+		};
+
+		const shape = SvgReader.registry.createFromSvgTag(tag, id, attrs);
+		if (!shape) {
+			return null;
+		}
+
+		if (shape.isComposite()) {
+			SvgReader.loadOrderedGroupChildren(
+				shape,
+				SvgSnippetParser.innerContentFromGroupSnippet(snippet),
+				warnings,
+				idCounters,
 			);
 		}
 
-		if (tag === "g") {
-			return new GroupShape(id);
-		}
-
-		return null;
+		return shape;
 	}
 
 	private static stringAttr(node: ParsedNode, name: string): string | undefined {
